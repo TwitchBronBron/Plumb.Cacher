@@ -92,6 +92,47 @@ namespace Cacher
         }
 
         /// <summary>
+        /// Get the item with the specified key
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public object Get(string key)
+        {
+            this.EvictExpiredItems();
+            return Get<object>(key);
+        }
+
+        /// <summary>
+        /// Get the item with the specified key. 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public T Get<T>(string key)
+        {
+            this.EvictExpiredItems();
+            return (T)this[key];
+        }
+
+        /// <summary>
+        /// Get the number of milliseconds remaining until the item will be evicted
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public double GetMillisecondsRemaining(string key)
+        {
+            this.EvictExpiredItems();
+            try
+            {
+                return this.cache[key].Value.MillisecondsRemaining;
+            }
+            catch (Exception)
+            {
+                throw new Exception("No item with key '" + key + "' could be found");
+            }
+        }
+
+        /// <summary>
         /// Gets the value with specified the key. If no item with that key exists, 
         /// the factory function is called to construct a new value
         /// </summary>
@@ -164,47 +205,6 @@ namespace Cacher
                 {
                     throw new Exception("No item with that key could be found");
                 }
-            }
-        }
-
-        /// <summary>
-        /// Get the item with the specified key
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public object Get(string key)
-        {
-            this.EvictExpiredItems();
-            return Get<object>(key);
-        }
-
-        /// <summary>
-        /// Get the item with the specified key. 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public T Get<T>(string key)
-        {
-            this.EvictExpiredItems();
-            return (T)this[key];
-        }
-
-        /// <summary>
-        /// Get the number of milliseconds remaining until the item will be evicted
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public double GetMillisecondsRemaining(string key)
-        {
-            this.EvictExpiredItems();
-            try
-            {
-                return this.cache[key].Value.MillisecondsRemaining;
-            }
-            catch (Exception)
-            {
-                throw new Exception("No item with key '" + key + "' could be found");
             }
         }
 
