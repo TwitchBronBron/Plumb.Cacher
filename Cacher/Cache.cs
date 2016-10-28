@@ -12,9 +12,9 @@ namespace Cacher
 {
     public class Cache : DynamicObject
     {
-        public Cache(int? defaultSecondsToLive = null)
+        public Cache(int? defaultMillisecondsToLive = null)
         {
-            this.defaultSecondsToLive = defaultSecondsToLive;
+            this.defaultMillisecondsToLive = defaultMillisecondsToLive;
             this.cache = new ConcurrentDictionary<string, Lazy<CacheItem>>();
         }
 
@@ -27,7 +27,7 @@ namespace Cacher
         /// The default number of seconds that an item should remain in cache before being evicted. 
         /// Null means infinite
         /// </summary>
-        protected virtual int? defaultSecondsToLive { get; set; }
+        protected virtual int? defaultMillisecondsToLive { get; set; }
 
 
         /// <summary>
@@ -35,14 +35,14 @@ namespace Cacher
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        public void Add(string key, object value, int? secondsToLive = null)
+        public void Add(string key, object value, int? millisecondsToLive = null)
         {
             this.EvictExpiredItems();
             this.cache.AddOrUpdate(key, (x) =>
             {
                 var lazy = new Lazy<CacheItem>(() =>
                 {
-                    return new CacheItem(value, secondsToLive);
+                    return new CacheItem(value, millisecondsToLive);
                 }, false);
 
                 //immediately access the value
@@ -52,7 +52,7 @@ namespace Cacher
             {
                 var lazy = new Lazy<CacheItem>(() =>
                 {
-                    return new CacheItem(value, secondsToLive);
+                    return new CacheItem(value, millisecondsToLive);
                 }, false);
                 //immediately access the value
                 var lazyValue = lazy.Value;
@@ -98,14 +98,14 @@ namespace Cacher
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
         /// <param name="factory"></param>
-        /// <param name="secondsToLive"></param>
+        /// <param name="millisecondsToLive"></param>
         /// <returns></returns>
-        public T Resolve<T>(string key, Func<T> factory, int? secondsToLive = null)
+        public T Resolve<T>(string key, Func<T> factory, int? millisecondsToLive = null)
         {
             this.EvictExpiredItems();
 
             var createdThisCall = false;
-            secondsToLive = secondsToLive != null ? secondsToLive : this.defaultSecondsToLive;
+            millisecondsToLive = millisecondsToLive != null ? millisecondsToLive : this.defaultMillisecondsToLive;
             var cacheItem = this.cache.GetOrAdd(key, (string k) =>
              {
                  //only allow a single thread to run this specific resolver function at a time. 
@@ -113,7 +113,7 @@ namespace Cacher
                  {
                      createdThisCall = true;
                      var value = factory();
-                     return new CacheItem(value, secondsToLive);
+                     return new CacheItem(value, millisecondsToLive);
                  }, LazyThreadSafetyMode.ExecutionAndPublication);
                  return lazyResult;
              });
@@ -125,7 +125,7 @@ namespace Cacher
             if (cacheItem.Value.IsExpired && createdThisCall == false)
             {
                 this.Remove(key);
-                return this.Resolve(key, factory, secondsToLive);
+                return this.Resolve(key, factory, millisecondsToLive);
             }
             else
             {
@@ -191,16 +191,16 @@ namespace Cacher
         }
 
         /// <summary>
-        /// Get the number of seconds remaining until the item will be evicted
+        /// Get the number of milliseconds remaining until the item will be evicted
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        public double GetSecondsRemaining(string key)
+        public double GetMillisecondsRemaining(string key)
         {
             this.EvictExpiredItems();
             try
             {
-                return this.cache[key].Value.SecondsRemaining;
+                return this.cache[key].Value.MillisecondsRemaining;
             }
             catch (Exception)
             {

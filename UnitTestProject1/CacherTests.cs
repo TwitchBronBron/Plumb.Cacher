@@ -81,19 +81,19 @@ namespace Tests
         public void SetResetsTimer()
         {
             cache.Add("name", "Bob", 10);
-            Assert.AreEqual(10, Math.Ceiling(cache.GetSecondsRemaining("name")));
+            Assert.AreEqual(10, Math.Ceiling(cache.GetMillisecondsRemaining("name")));
 
             cache.Add("name", "Bob", 20);
-            Assert.AreEqual(20, Math.Ceiling(cache.GetSecondsRemaining("name")));
+            Assert.AreEqual(20, Math.Ceiling(cache.GetMillisecondsRemaining("name")));
         }
 
         [TestMethod]
-        public void GetSecondsRemainingThrowsForUnknownKey()
+        public void GetMillisecondsRemainingThrowsForUnknownKey()
         {
             cache.Add("name", "Bob");
             try
             {
-                cache.GetSecondsRemaining("nonexistant key");
+                cache.GetMillisecondsRemaining("nonexistant key");
                 Assert.Fail("cache should have thrown an exception when accessing an unknown key");
             }
             catch (Exception)
@@ -124,15 +124,15 @@ namespace Tests
             var name = cache.Resolve("name", () =>
             {
                 return "Bob";
-            }, 1);
+            }, 20);
             Assert.AreEqual("Bob", name);
 
             //timeout for less than a second. 
-            Thread.Sleep(500);
+            Thread.Sleep(10);
 
             //reset the cache item, giving it exactly one second to live
             cache.Reset("name");
-            Thread.Sleep(900);
+            Thread.Sleep(15);
 
             name = cache.Resolve("name", () =>
             {
@@ -141,7 +141,7 @@ namespace Tests
             Assert.AreEqual("Bob", name);
 
             //sleep until after the item should expire. Verify that the item expired
-            Thread.Sleep(200);
+            Thread.Sleep(10);
             name = cache.Resolve("name", () =>
             {
                 return "Not Bob";
@@ -157,12 +157,11 @@ namespace Tests
             }, null);
             Assert.AreEqual("Bob", name);
 
-            //timeout for less than a second. 
-            Thread.Sleep(500);
+            Thread.Sleep(10);
 
             //reset the cache item
             cache.Reset("name");
-            Thread.Sleep(900);
+            Thread.Sleep(100);
 
             name = cache.Resolve("name", () =>
             {
@@ -177,11 +176,11 @@ namespace Tests
             var name = cache.Resolve("name", () =>
             {
                 return "Bob";
-            }, 1);
+            }, 20);
             Assert.AreEqual("Bob", name);
 
             //timeout for less than a second. Name should be the same
-            Thread.Sleep(500);
+            Thread.Sleep(10);
             name = cache.Resolve("name", () =>
             {
                 return "Not Bob";
@@ -189,7 +188,7 @@ namespace Tests
             Assert.AreEqual("Bob", name);
 
             //sleep until after the item should expire. Verify that the item expired
-            Thread.Sleep(600);
+            Thread.Sleep(20);
             name = cache.Resolve("name", () =>
             {
                 return "Not Bob";
@@ -248,7 +247,7 @@ namespace Tests
         }
     }
 
-    class TestCache: Cache
+    class TestCache : Cache
     {
         public ConcurrentDictionary<string, Lazy<CacheItem>> theCache
         {

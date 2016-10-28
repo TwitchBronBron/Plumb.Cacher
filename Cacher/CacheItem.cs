@@ -4,14 +4,14 @@ namespace Cacher
 {
     public class CacheItem
     {
-        public CacheItem(object value, int? secondsToLive)
+        public CacheItem(object value, int? millisecondsToLive)
         {
             this.Value = value;
-            this.SecondsToLive = secondsToLive;
+            this.MillisecondsToLive = millisecondsToLive;
 
-            if (this.SecondsToLive != null)
+            if (this.MillisecondsToLive != null)
             {
-                this.EvictionDate = DateTime.UtcNow.AddSeconds(this.SecondsToLive.Value);
+                this.EvictionDate = DateTime.UtcNow.AddMilliseconds(this.MillisecondsToLive.Value);
             }
         }
 
@@ -21,19 +21,19 @@ namespace Cacher
         public object Value;
 
         /// <summary>
-        /// The number of seconds that this cache item should live before being evicted from the cache
+        /// The number of milliseconds that this cache item should live before being evicted from the cache
         /// Null means infinite
         /// </summary>
-        private int? SecondsToLive;
+        private int? MillisecondsToLive;
 
         /// <summary>
-        /// The number of seconds remaining before this item should be evicted from cache
+        /// The number of milliseconds remaining before this item should be evicted from cache
         /// </summary>
-        public double SecondsRemaining
+        public double MillisecondsRemaining
         {
             get
             {
-                return (this.EvictionDate - DateTime.UtcNow).Value.TotalSeconds;
+                return (this.EvictionDate - DateTime.UtcNow).Value.TotalMilliseconds;
             }
         }
 
@@ -58,9 +58,9 @@ namespace Cacher
         /// </summary>
         public void Reset()
         {
-            if (this.SecondsToLive != null)
+            if (this.MillisecondsToLive != null)
             {
-                this.EvictionDate = DateTime.UtcNow.AddSeconds(this.SecondsToLive.Value);
+                this.EvictionDate = DateTime.UtcNow.AddMilliseconds(this.MillisecondsToLive.Value);
             }
             else
             {
