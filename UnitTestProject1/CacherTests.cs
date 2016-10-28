@@ -201,15 +201,20 @@ namespace Tests
         public void EvictionsHappenDuringAnyAccess()
         {
             var testCache = new TestCache();
+            testCache.Add("age", 20);
+
             //add an immediately expired item
             testCache.Add("name", "Bob", -1);
+
             //it should be in the internal cache
-            testCache.theCache.ContainsKey("name");
+            Assert.IsTrue(testCache.theCache.ContainsKey("name"));
 
-            //accessing any property of the cache causes it to clean house
-            Assert.IsFalse(testCache.ContainsKey("name"));
+            //accessing a different property of the cache causes it to clean house
+            Assert.IsTrue(testCache.ContainsKey("age"));
 
-            
+            //it should be gone now
+            Assert.IsFalse(testCache.theCache.ContainsKey("name"));
+
         }
 
         [TestMethod]

@@ -37,6 +37,7 @@ namespace Cacher
         /// <param name="value"></param>
         public void Add(string key, object value, int? secondsToLive = null)
         {
+            this.EvictExpiredItems();
             this.cache.AddOrUpdate(key, (x) =>
             {
                 var lazy = new Lazy<CacheItem>(() =>
@@ -60,7 +61,39 @@ namespace Cacher
         }
 
         /// <summary>
-        /// Gets the value with specified the key. If no item with that key exists, the factory function is called to construct a new value
+        /// Determines if the cache contains an item with the specified key. It is not recommended to use ContainsKey 
+        /// in combination with Add() because in multi-threaded environments, this could lead to some unexpected 
+        /// results due to race conditions. Consider using Resolve() instead.
+        /// 
+        /// If the item has expired, the cache will NOT contain it
+        /// </summary>
+        /// <param name="key">The key for the item in question</param>
+        /// <returns></returns>
+        public virtual bool ContainsKey(string key)
+        {
+            this.EvictExpiredItems();
+            return this.cache.ContainsKey(key);
+        }
+
+        /// <summary>
+        /// Evicts all expired items from the cache. This is called automatically by every internal public method, 
+        /// so it is unlikely that it needs to be called externally
+        /// </summary>
+        public virtual void EvictExpiredItems()
+        {
+            //TODO: if nothing needs evicted, this should be super fast.
+            foreach (var kvp in cache)
+            {
+                if (kvp.Value.Value.IsExpired)
+                {
+                    ((IDictionary<string, Lazy<CacheItem>>)cache).Remove(kvp.Key);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the value with specified the key. If no item with that key exists, 
+        /// the factory function is called to construct a new value
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
@@ -69,6 +102,8 @@ namespace Cacher
         /// <returns></returns>
         public T Resolve<T>(string key, Func<T> factory, int? secondsToLive = null)
         {
+            this.EvictExpiredItems();
+
             var createdThisCall = false;
             secondsToLive = secondsToLive != null ? secondsToLive : this.defaultSecondsToLive;
             var cacheItem = this.cache.GetOrAdd(key, (string k) =>
@@ -104,6 +139,7 @@ namespace Cacher
         /// <param name="key"></param>
         public void Remove(string key)
         {
+            this.EvictExpiredItems();
             IDictionary<string, Lazy<CacheItem>> cache = this.cache;
             cache.Remove(key);
         }
@@ -115,6 +151,7 @@ namespace Cacher
         /// <param name="key"></param>
         public void Reset(string key)
         {
+            this.EvictExpiredItems();
             //try to reset this cache item's timer. 
             if (this.cache.ContainsKey(key))
             {
@@ -137,6 +174,7 @@ namespace Cacher
         /// <returns></returns>
         public object Get(string key)
         {
+            this.EvictExpiredItems();
             return Get<object>(key);
         }
 
@@ -148,6 +186,7 @@ namespace Cacher
         /// <returns></returns>
         public T Get<T>(string key)
         {
+            this.EvictExpiredItems();
             return (T)this[key];
         }
 
@@ -158,6 +197,7 @@ namespace Cacher
         /// <returns></returns>
         public double GetSecondsRemaining(string key)
         {
+            this.EvictExpiredItems();
             try
             {
                 return this.cache[key].Value.SecondsRemaining;
@@ -176,6 +216,7 @@ namespace Cacher
         {
             get
             {
+                this.EvictExpiredItems();
                 return this.cache[index].Value.Value;
             }
         }
