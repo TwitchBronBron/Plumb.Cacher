@@ -6,10 +6,10 @@
         <title>Plumbsoft.Cacher</title>
         <authors>TwitchBronBron</authors>
         <owners>TwitchBronBron</owners>
-        <licenseUrl>https://raw.githubusercontent.com/TwitchBronBron/Cacher/master/LICENSE.txt</licenseUrl>
-        <projectUrl>https://github.com/TwitchBronBron/Cacher</projectUrl>
+        <licenseUrl>https://raw.githubusercontent.com/TwitchBronBron/Plumbsoft.Cacher/master/LICENSE.txt</licenseUrl>
+        <projectUrl>https://github.com/TwitchBronBron/Plumbsoft.Cacher</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
-        <description>An in-memory, thread-safe cache.</description>
+        <description>An in-memory, thread-safe, self-expiring cache.</description>
         <language>en-US</language>
         <tags>cache caching expire</tags>
     </metadata>
