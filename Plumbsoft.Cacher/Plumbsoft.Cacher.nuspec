@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>Plumbsoft.Cacher</id>
+        <version>1.0.0</version>
+        <title>Plumbsoft.Cacher</title>
+        <authors>TwitchBronBron</authors>
+        <owners>TwitchBronBron</owners>
+        <licenseUrl>https://raw.githubusercontent.com/TwitchBronBron/Cacher/master/LICENSE.txt</licenseUrl>
+        <projectUrl>https://github.com/TwitchBronBron/Cacher</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>An in-memory, thread-safe cache.</description>
+        <language>en-US</language>
+        <tags>cache caching expire</tags>
+    </metadata>
+    <files />
+</package>

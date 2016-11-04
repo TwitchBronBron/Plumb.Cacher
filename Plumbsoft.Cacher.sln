@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cacher", "Cacher\Cacher.csproj", "{D2ED2FD7-6596-428C-B6C4-9FFB5A6EEA59}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Plumbsoft.Cacher", "Plumbsoft.Cacher\Plumbsoft.Cacher.csproj", "{D2ED2FD7-6596-428C-B6C4-9FFB5A6EEA59}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{5B060092-36D3-48D8-89CC-FB94CD72D9A1}"
 EndProject

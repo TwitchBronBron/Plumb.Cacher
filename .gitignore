@@ -243,4 +243,4 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
-/Cacher/_CreateNewNuGetPackage
+_CreateNewNuGetPackage/
