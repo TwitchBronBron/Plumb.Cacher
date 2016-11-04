@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Cacher
+namespace Plumbsoft.Cacher
 {
     public class Cache : DynamicObject
     {

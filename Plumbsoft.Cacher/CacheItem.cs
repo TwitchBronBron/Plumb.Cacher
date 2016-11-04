@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Cacher
+namespace Plumbsoft.Cacher
 {
     public class CacheItem
     {
