@@ -24,40 +24,30 @@ namespace Cacher
         protected virtual ConcurrentDictionary<string, Lazy<CacheItem>> cache { get; set; }
 
         /// <summary>
+        /// A list of all current cache item keys sorted by their eviction date.
+        /// </summary>
+        protected virtual SortedDuplicatesList<DateTime, CacheItem> evictionOrderList { get; set; } = new SortedDuplicatesList<DateTime, CacheItem>();
+
+        /// <summary>
         /// The default number of seconds that an item should remain in cache before being evicted. 
         /// Null means infinite
         /// </summary>
         protected virtual int? defaultMillisecondsToLive { get; set; }
 
-
         /// <summary>
         /// Adds or replaces the item in the cache with this key.
+        /// This is not threadsafe, so only use it when you will not have race conditions
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        public void Add(string key, object value, int? millisecondsToLive = null)
+        public void AddOrReplace(string key, object value, int? millisecondsToLive = null)
         {
-            this.EvictExpiredItems();
-            this.cache.AddOrUpdate(key, (x) =>
+            //remove the existing item, if one exists
+            this.Remove(key);
+            this.Resolve(key, () =>
             {
-                var lazy = new Lazy<CacheItem>(() =>
-                {
-                    return new CacheItem(value, millisecondsToLive);
-                }, false);
-
-                //immediately access the value
-                var lazyValue = lazy.Value;
-                return lazy;
-            }, (x, y) =>
-            {
-                var lazy = new Lazy<CacheItem>(() =>
-                {
-                    return new CacheItem(value, millisecondsToLive);
-                }, false);
-                //immediately access the value
-                var lazyValue = lazy.Value;
-                return lazy;
-            });
+                return value;
+            }, millisecondsToLive);
         }
 
         /// <summary>
@@ -77,16 +67,34 @@ namespace Cacher
 
         /// <summary>
         /// Evicts all expired items from the cache. This is called automatically by every internal public method, 
-        /// so it is unlikely that it needs to be called externally
+        /// so it is unlikely that it needs to be called externally.
+        /// 
+        /// If nothing needs to be evicted, this should be extremely fast
         /// </summary>
         public virtual void EvictExpiredItems()
         {
-            //TODO: if nothing needs evicted, this should be super fast.
-            foreach (var kvp in cache)
+            lock (evictionOrderList)
             {
-                if (kvp.Value.Value.IsExpired)
+                var itemsToRemove = new List<KeyValuePair<DateTime, CacheItem>>();
+                foreach (var kvp in this.evictionOrderList)
                 {
-                    ((IDictionary<string, Lazy<CacheItem>>)cache).Remove(kvp.Key);
+                    //if the item is not expired, no other items in this list are expired because the list is orderd. stop now
+                    if (kvp.Value.IsExpired == false)
+                    {
+                        break;
+                    }
+
+                    //this item is expired, so evict it
+                    itemsToRemove.Add(kvp);
+                }
+                //now that we have the list of items to remove...remove them
+                foreach (var kvp in itemsToRemove)
+                {
+                    this.evictionOrderList.Remove(kvp);
+
+                    //remove it from the cache
+                    Lazy<CacheItem> outValue;
+                    this.cache.TryRemove(kvp.Value.Key, out outValue);
                 }
             }
         }
@@ -147,42 +155,58 @@ namespace Cacher
 
             var createdThisCall = false;
             millisecondsToLive = millisecondsToLive != null ? millisecondsToLive : this.defaultMillisecondsToLive;
-            var cacheItem = this.cache.GetOrAdd(key, (string k) =>
+            var lazyCacheItem = this.cache.GetOrAdd(key, (string k) =>
              {
                  //only allow a single thread to run this specific resolver function at a time. 
                  var lazyResult = new Lazy<CacheItem>(() =>
                  {
                      createdThisCall = true;
                      var value = factory();
-                     return new CacheItem(value, millisecondsToLive);
+                     return new CacheItem(key, value, millisecondsToLive);
                  }, LazyThreadSafetyMode.ExecutionAndPublication);
                  return lazyResult;
              });
 
             //force the lazy class to load the value in a separate line, just for debugging purposes
-            { var value = cacheItem.Value; }
+            var cacheItem = lazyCacheItem.Value;
+
+            //add this item to the eviction keys list
+            lock (evictionOrderList)
+            {
+                evictionOrderList.Add(cacheItem.EvictionDate, cacheItem);
+            }
 
             //if the item expired and was NOT created this call, toss it and get a new one
-            if (cacheItem.Value.IsExpired && createdThisCall == false)
+            if (cacheItem.IsExpired && createdThisCall == false)
             {
                 this.Remove(key);
                 return this.Resolve(key, factory, millisecondsToLive);
             }
             else
             {
-                return (T)cacheItem.Value.Value;
+                return (T)cacheItem.Value;
             }
         }
 
         /// <summary>
-        /// Immediately removes an item from cache with the specified name
+        /// Immediately removes an item from cache with the specified name. 
+        /// If no key with that name exists, no exception will be thrown. 
         /// </summary>
         /// <param name="key"></param>
         public void Remove(string key)
         {
             this.EvictExpiredItems();
-            IDictionary<string, Lazy<CacheItem>> cache = this.cache;
-            cache.Remove(key);
+            Lazy<CacheItem> lazy;
+            this.cache.TryRemove(key, out lazy);
+
+            if (lazy != null)
+            {
+                //if we actually removed an item, remove it from the eviction order list
+                lock (this.evictionOrderList)
+                {
+                    this.evictionOrderList.Remove(lazy.Value.EvictionDate, lazy.Value);
+                }
+            }
         }
 
         /// <summary>
@@ -199,12 +223,30 @@ namespace Cacher
                 //A race condition could exist that would allow it to be in cache above, but then missing here. So eat any exception where that would happen
                 try
                 {
-                    this.cache[key].Value.Reset();
+                    var cacheItem = this.cache[key].Value;
+                    lock (evictionOrderList)
+                    {
+                        evictionOrderList.Remove(cacheItem.EvictionDate, cacheItem);
+                    }
+                    cacheItem.Reset();
+                    lock (evictionOrderList)
+                    {
+                        evictionOrderList.Add(cacheItem.EvictionDate, cacheItem);
+                    }
                 }
                 catch (Exception)
                 {
                     throw new Exception("No item with that key could be found");
                 }
+            }
+        }
+
+        public void Clear()
+        {
+            this.cache.Clear();
+            lock (evictionOrderList)
+            {
+                this.evictionOrderList.Clear();
             }
         }
 
@@ -217,7 +259,14 @@ namespace Cacher
             get
             {
                 this.EvictExpiredItems();
-                return this.cache[index].Value.Value;
+                try
+                {
+                    return this.cache[index].Value.Value;
+                }
+                catch (Exception)
+                {
+                    throw new Exception("No item with that key was found in the cache");
+                }
             }
         }
     }

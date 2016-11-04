@@ -32,11 +32,32 @@ namespace Cacher
             list.Insert(index, kvp);
         }
 
+        /// <summary>
+        /// Clear the list
+        /// </summary>
+        public void Clear()
+        {
+            this.list.Clear();
+        }
+
         public List<KeyValuePair<TKey, TValue>> Items
         {
             get
             {
                 return list;
+            }
+        }
+
+        /// <summary>
+        /// Remove the item with the specified key and value. 
+        /// </summary>
+        /// <param name="kvp"></param>
+        public void Remove(KeyValuePair<TKey, TValue> kvp)
+        {
+            var idx = list.BinarySearch(kvp, comparer);
+            if (idx > -1)
+            {
+                list.RemoveAt(idx);
             }
         }
 
@@ -48,11 +69,7 @@ namespace Cacher
         public void Remove(TKey key, TValue value)
         {
             var kvp = new KeyValuePair<TKey, TValue>(key, value);
-            var idx = list.BinarySearch(kvp, comparer);
-            if (idx > -1)
-            {
-                list.RemoveAt(idx);
-            }
+            Remove(kvp);
         }
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
@@ -71,19 +88,8 @@ namespace Cacher
     public class KvpKeyComparer<TKey, TValue> : IComparer<KeyValuePair<TKey, TValue>>
      where TKey : IComparable
     {
-        public int Compare(KeyValuePair<TKey, TValue> x,
-                           KeyValuePair<TKey, TValue> y)
+        public int Compare(KeyValuePair<TKey, TValue> x, KeyValuePair<TKey, TValue> y)
         {
-            if (x.Key == null)
-            {
-                if (y.Key == null)
-                    return 0;
-                return -1;
-            }
-
-            if (y.Key == null)
-                return 1;
-
             return x.Key.CompareTo(y.Key);
         }
     }

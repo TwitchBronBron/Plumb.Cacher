@@ -71,26 +71,26 @@ namespace Tests
         public void Set()
         {
             //set when it's not there.
-            cache.Add("name", "Bob");
+            cache.AddOrReplace("name", "Bob");
             Assert.AreEqual("Bob", cache["name"]);
-            cache.Add("name", "Adam");
+            cache.AddOrReplace("name", "Adam");
             Assert.AreEqual("Adam", cache["name"]);
         }
 
         [TestMethod]
         public void SetResetsTimer()
         {
-            cache.Add("name", "Bob", 10);
+            cache.AddOrReplace("name", "Bob", 10);
             Assert.AreEqual(10, Math.Ceiling(cache.GetMillisecondsRemaining("name")));
 
-            cache.Add("name", "Bob", 20);
+            cache.AddOrReplace("name", "Bob", 20);
             Assert.AreEqual(20, Math.Ceiling(cache.GetMillisecondsRemaining("name")));
         }
 
         [TestMethod]
         public void GetMillisecondsRemainingThrowsForUnknownKey()
         {
-            cache.Add("name", "Bob");
+            cache.AddOrReplace("name", "Bob");
             try
             {
                 cache.GetMillisecondsRemaining("nonexistant key");
@@ -106,7 +106,7 @@ namespace Tests
         public void ResolveEvictsExpiredItem()
         {
             //add an item that will expire immediately
-            cache.Add("name", "Bob", -10);
+            cache.AddOrReplace("name", "Bob", -10);
             var wasCalled = false;
             var value = cache.Resolve("name", () =>
             {
@@ -200,10 +200,10 @@ namespace Tests
         public void EvictionsHappenDuringAnyAccess()
         {
             var testCache = new TestCache();
-            testCache.Add("age", 20);
+            testCache.AddOrReplace("age", 20);
 
             //add an immediately expired item
-            testCache.Add("name", "Bob", -1);
+            testCache.AddOrReplace("name", "Bob", -1);
 
             //it should be in the internal cache
             Assert.IsTrue(testCache.theCache.ContainsKey("name"));
@@ -222,6 +222,9 @@ namespace Tests
             //try this operation many times, to attempt to hit certain race conditions
             for (var i = 0; i < 2000; i++)
             {
+                //clear the cache before each run
+                cache.Clear();
+
                 var callCount = 0;
                 var tasks = new List<Task>();
                 for (int j = 0; j < 30; j++)

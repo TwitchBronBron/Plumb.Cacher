@@ -4,15 +4,19 @@ namespace Cacher
 {
     public class CacheItem
     {
-        public CacheItem(object value, int? millisecondsToLive)
+        public string Key;
+
+        public CacheItem(string key, object value, int? millisecondsToLive)
         {
+            this.Key = key;
             this.Value = value;
             this.MillisecondsToLive = millisecondsToLive;
 
             if (this.MillisecondsToLive != null)
             {
-                this.EvictionDate = DateTime.UtcNow.AddMilliseconds(this.MillisecondsToLive.Value);
+                this._EvictionDate = DateTime.UtcNow.AddMilliseconds(this.MillisecondsToLive.Value);
             }
+            Reset();
         }
 
         /// <summary>
@@ -33,14 +37,22 @@ namespace Cacher
         {
             get
             {
-                return (this.EvictionDate - DateTime.UtcNow).Value.TotalMilliseconds;
+                return (this._EvictionDate - DateTime.UtcNow).TotalMilliseconds;
             }
         }
+
+        private DateTime _EvictionDate;
 
         /// <summary>
         /// The date when this cache item should be evicted from the cache
         /// </summary>
-        private DateTime? EvictionDate;
+        public DateTime EvictionDate
+        {
+            get
+            {
+                return _EvictionDate;
+            }
+        }
 
         /// <summary>
         /// Determines if this cache item is expired and should be evicted from the cache
@@ -49,7 +61,7 @@ namespace Cacher
         {
             get
             {
-                return DateTime.UtcNow > this.EvictionDate;
+                return DateTime.UtcNow > this._EvictionDate;
             }
         }
 
@@ -60,11 +72,12 @@ namespace Cacher
         {
             if (this.MillisecondsToLive != null)
             {
-                this.EvictionDate = DateTime.UtcNow.AddMilliseconds(this.MillisecondsToLive.Value);
+                this._EvictionDate = DateTime.UtcNow.AddMilliseconds(this.MillisecondsToLive.Value);
             }
             else
             {
-                this.EvictionDate = null;
+                //this item will be evicted in 10,000 years...so essentially never
+                this._EvictionDate = DateTime.MaxValue;
             }
         }
     }
