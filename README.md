@@ -4,7 +4,7 @@ A .NET thread-safe in-memory cache that provides expiration for cache items.
 
 # Usage
 
-```
+```csharp
 using Plumbsoft.Cacher;
 class VideoLibrary{
     //create a new static cache property with a default cache timeout of 
