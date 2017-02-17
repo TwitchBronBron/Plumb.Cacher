@@ -1,11 +1,11 @@
-# Plumbsoft.Cacher
+# Plumb.Cacher
 A .NET thread-safe in-memory cache that provides expiration for cache items.
 
 
 # Usage
 
 ```csharp
-using Plumbsoft.Cacher;
+using Plumb.Cacher;
 class VideoLibrary{
     //create a new static cache property with a default cache timeout of 
     //5 minutes (in milliseconds)

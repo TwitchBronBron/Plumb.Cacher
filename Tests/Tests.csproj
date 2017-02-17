@@ -55,9 +55,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Plumbsoft.Cacher\Plumbsoft.Cacher.csproj">
+    <ProjectReference Include="..\Plumb.Cacher\Plumb.Cacher.csproj">
       <Project>{D2ED2FD7-6596-428C-B6C4-9FFB5A6EEA59}</Project>
-      <Name>Plumbsoft.Cacher</Name>
+      <Name>Plumb.Cacher</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>
