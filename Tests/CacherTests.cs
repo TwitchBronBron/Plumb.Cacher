@@ -1,24 +1,24 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Plumb.Cacher;
-using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
+using System.Linq;
+using System.Text;
+using Plumb.Cacher;
+using Xunit;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Tests
 {
-    [TestClass]
     public class CacherTests
     {
         private Cache cache;
-        [TestInitialize]
-        public void Init()
+        public CacherTests()
         {
             this.cache = new Cache();
         }
 
-        [TestMethod]
+        [Fact]
         public void ResolveCallsResolverOnlyOnce()
         {
             var firstWasCalled = false;
@@ -29,7 +29,7 @@ namespace Tests
                 return "Adam";
             });
 
-            Assert.AreEqual("Adam", name);
+            Assert.Equal("Adam", name);
 
             //already has item in cache called name, so resolver won't be called again
             name = this.cache.Resolve("name", () =>
@@ -38,14 +38,14 @@ namespace Tests
                 return "Bob";
             });
 
-            Assert.AreEqual("Adam", name);
-            Assert.AreNotEqual("Bob", name);
+            Assert.Equal("Adam", name);
+            Assert.NotEqual("Bob", name);
 
-            Assert.IsTrue(firstWasCalled);
-            Assert.IsFalse(secondWasCalled);
+            Assert.True(firstWasCalled);
+            Assert.False(secondWasCalled);
         }
 
-        [TestMethod]
+        [Fact]
         public void AccessLikeDictionary()
         {
             cache.Resolve("name", () =>
@@ -53,56 +53,56 @@ namespace Tests
                 return "Bob";
             });
 
-            Assert.AreEqual("Bob", cache["name"]);
+            Assert.Equal("Bob", cache["name"]);
         }
 
-        [TestMethod]
+        [Fact]
         public void Get()
         {
             cache.Resolve("name", () =>
             {
                 return "Bob";
             });
-            Assert.AreEqual("Bob", cache.Get("name"));
-            Assert.AreEqual("Bob", cache.Get<string>("name"));
+            Assert.Equal("Bob", cache.Get("name"));
+            Assert.Equal("Bob", cache.Get<string>("name"));
         }
 
-        [TestMethod]
+        [Fact]
         public void Set()
         {
             //set when it's not there.
             cache.AddOrReplace("name", "Bob");
-            Assert.AreEqual("Bob", cache["name"]);
+            Assert.Equal("Bob", cache["name"]);
             cache.AddOrReplace("name", "Adam");
-            Assert.AreEqual("Adam", cache["name"]);
+            Assert.Equal("Adam", cache["name"]);
         }
 
-        [TestMethod]
+        [Fact]
         public void SetResetsTimer()
         {
             cache.AddOrReplace("name", "Bob", 10);
-            Assert.AreEqual(10, Math.Ceiling(cache.GetMillisecondsRemaining("name")));
+            Assert.Equal(10, Math.Ceiling(cache.GetMillisecondsRemaining("name")));
 
             cache.AddOrReplace("name", "Bob", 20);
-            Assert.AreEqual(20, Math.Ceiling(cache.GetMillisecondsRemaining("name")));
+            Assert.Equal(20, Math.Ceiling(cache.GetMillisecondsRemaining("name")));
         }
 
-        [TestMethod]
+        [Fact]
         public void GetMillisecondsRemainingThrowsForUnknownKey()
         {
             cache.AddOrReplace("name", "Bob");
             try
             {
                 cache.GetMillisecondsRemaining("nonexistant key");
-                Assert.Fail("cache should have thrown an exception when accessing an unknown key");
+                Assert.False(true, "cache should have thrown an exception when accessing an unknown key");
             }
             catch (Exception)
             {
-                Assert.IsTrue(true);
+                Assert.True(true);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ResolveEvictsExpiredItem()
         {
             //add an item that will expire immediately
@@ -114,18 +114,18 @@ namespace Tests
                 return "Jim";
             });
 
-            Assert.IsTrue(wasCalled);
-            Assert.AreEqual("Jim", value);
+            Assert.True(wasCalled);
+            Assert.Equal("Jim", value);
         }
 
-        [TestMethod]
+        [Fact]
         public void Reset()
         {
             var name = cache.Resolve("name", () =>
             {
                 return "Bob";
             }, 20);
-            Assert.AreEqual("Bob", name);
+            Assert.Equal("Bob", name);
 
             //timeout for less than a second. 
             Thread.Sleep(10);
@@ -138,7 +138,7 @@ namespace Tests
             {
                 return "Not Bob";
             }, 1);
-            Assert.AreEqual("Bob", name);
+            Assert.Equal("Bob", name);
 
             //sleep until after the item should expire. Verify that the item expired
             Thread.Sleep(10);
@@ -146,16 +146,16 @@ namespace Tests
             {
                 return "Not Bob";
             }, 1);
-            Assert.AreEqual("Not Bob", name);
+            Assert.Equal("Not Bob", name);
         }
-        [TestMethod]
+        [Fact]
         public void ResetInfiniteItem()
         {
             var name = cache.Resolve("name", () =>
             {
                 return "Bob";
             }, null);
-            Assert.AreEqual("Bob", name);
+            Assert.Equal("Bob", name);
 
             Thread.Sleep(10);
 
@@ -167,17 +167,17 @@ namespace Tests
             {
                 return "Not Bob";
             }, 1);
-            Assert.AreEqual("Bob", name);
+            Assert.Equal("Bob", name);
         }
 
-        [TestMethod]
+        [Fact]
         public void ItemsAreEvictedOnAccess()
         {
             var name = cache.Resolve("name", () =>
             {
                 return "Bob";
             }, 20);
-            Assert.AreEqual("Bob", name);
+            Assert.Equal("Bob", name);
 
             //timeout for less than a second. Name should be the same
             Thread.Sleep(10);
@@ -185,7 +185,7 @@ namespace Tests
             {
                 return "Not Bob";
             }, 1);
-            Assert.AreEqual("Bob", name);
+            Assert.Equal("Bob", name);
 
             //sleep until after the item should expire. Verify that the item expired
             Thread.Sleep(20);
@@ -193,10 +193,10 @@ namespace Tests
             {
                 return "Not Bob";
             }, 1);
-            Assert.AreEqual("Not Bob", name);
+            Assert.Equal("Not Bob", name);
         }
 
-        [TestMethod]
+        [Fact]
         public void EvictionsHappenDuringAnyAccess()
         {
             var testCache = new TestCache();
@@ -206,17 +206,17 @@ namespace Tests
             testCache.AddOrReplace("name", "Bob", -1);
 
             //it should be in the internal cache
-            Assert.IsTrue(testCache.theCache.ContainsKey("name"));
+            Assert.True(testCache.theCache.ContainsKey("name"));
 
             //accessing a different property of the cache causes it to clean house
-            Assert.IsTrue(testCache.ContainsKey("age"));
+            Assert.True(testCache.ContainsKey("age"));
 
             //it should be gone now
-            Assert.IsFalse(testCache.theCache.ContainsKey("name"));
+            Assert.False(testCache.theCache.ContainsKey("name"));
 
         }
 
-        [TestMethod]
+        [Fact]
         public void ResolveCallsResolverOnlyOnceMultiThreaded()
         {
             //try this operation many times, to attempt to hit certain race conditions
@@ -242,7 +242,7 @@ namespace Tests
                 Task.WaitAll(tasks.ToArray());
 
                 //only one of the tasks should have had their resolve function called
-                Assert.AreEqual(1, callCount);
+                Assert.Equal(1, callCount);
 
                 //remove the item so we can start on the next ieration
                 cache.Remove("name");
