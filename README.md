@@ -1,4 +1,7 @@
 # Plumb.Cacher
+
+[![Build Status](https://travis-ci.org/TwitchBronBron/Plumb.Cacher.svg?branch=master)](https://travis-ci.org/TwitchBronBron/Plumb.Cacher.svg?branch=master)
+
 A .NET thread-safe in-memory cache that provides expiration for cache items.
 
 
