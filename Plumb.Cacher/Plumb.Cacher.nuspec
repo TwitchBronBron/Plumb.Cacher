@@ -11,7 +11,7 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>An in-memory, thread-safe, self-expiring cache.</description>
         <language>en-US</language>
-        <tags>cache caching expire</tags>
+        <tags>cache cacher caching expire</tags>
     </metadata>
     <files />
 </package>
