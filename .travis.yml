@@ -1,2 +1,4 @@
 language: csharp
 solution: Plumb.Cacher.sln
+scripts:
+    - mono packages/xunit.runner.console.2.2.0/tools/xunit.console.exe Tests/bin/Debug/Tests.dll
