@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Dynamic;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Plumb.Cacher
 {
-    public class Cache : DynamicObject
+    public class Cache
     {
         public Cache(int? defaultMillisecondsToLive = null)
         {
