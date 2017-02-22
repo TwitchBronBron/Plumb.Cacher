@@ -20,7 +20,7 @@ class VideoLibrary{
         //If the cache does NOT have the value (either because it never had it
         //or because this cache item expired), the factory function is called,
         //and then the value is returned. 
-        return cache.Resolve("allActors", ()=>{
+        return cache.Resolve("allMovies", ()=>{
             //get the movies from your database somehow...
             return Db.GetAllMovies();
         });
