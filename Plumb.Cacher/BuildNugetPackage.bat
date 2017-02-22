@@ -1,0 +1,1 @@
+NuGet.exe pack Plumb.Cacher.csproj -Prop Configuration=Release

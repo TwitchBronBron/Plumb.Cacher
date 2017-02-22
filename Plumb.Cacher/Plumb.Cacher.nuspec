@@ -1,17 +1,24 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
-    <metadata>
-        <id>Plumb.Cacher</id>
-        <version>1.0.0</version>
-        <title>Plumb.Cacher</title>
-        <authors>TwitchBronBron</authors>
-        <owners>TwitchBronBron</owners>
-        <licenseUrl>https://raw.githubusercontent.com/TwitchBronBron/Plumb.Cacher/master/LICENSE.txt</licenseUrl>
-        <projectUrl>https://github.com/TwitchBronBron/Plumb.Cacher</projectUrl>
-        <requireLicenseAcceptance>false</requireLicenseAcceptance>
-        <description>An in-memory, thread-safe, self-expiring cache.</description>
-        <language>en-US</language>
-        <tags>cache cacher caching expire</tags>
-    </metadata>
-    <files />
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Plumb.Cacher</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>TwitchBronBron</authors>
+    <owners>TwitchBronBron</owners>
+    <licenseUrl>https://raw.githubusercontent.com/TwitchBronBron/Plumb.Cacher/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/TwitchBronBron/Plumb.Cacher</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>An in-memory, thread-safe, self-expiring cache.</summary>
+    <description>An in-memory, thread-safe, self-expiring cache.</description>
+    <releaseNotes>Initial release</releaseNotes>
+    <copyright>Copyright 2017</copyright>
+    <tags>cacher expiration cache caching multi-threading thread-safety</tags>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System" targetFramework=".NETFramework4.0" />
+    </frameworkAssemblies>
+  </metadata>
+  <files>
+    <file src="bin\Release\Plumb.Cacher.dll" target="lib\net4\Plumb.Cacher.dll" />
+  </files>
 </package>
