@@ -11,7 +11,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>An in-memory, thread-safe, self-expiring cache.</summary>
     <description>An in-memory, thread-safe, self-expiring cache.</description>
-    <releaseNotes>Initial release</releaseNotes>
+    <releaseNotes>Added defaultValue parameter to Cache.Get so that you can retrieve a default value instead of catching an exception</releaseNotes>
     <copyright>Copyright 2017</copyright>
     <tags>cacher expiration cache caching multi-threading thread-safety</tags>
     <frameworkAssemblies>
@@ -20,5 +20,6 @@
   </metadata>
   <files>
     <file src="bin\Release\Plumb.Cacher.dll" target="lib\net4\Plumb.Cacher.dll" />
+    <file src="bin\Release\Plumb.Cacher.xml" target="lib\net4\Plumb.Cacher.xml" />
   </files>
 </package>

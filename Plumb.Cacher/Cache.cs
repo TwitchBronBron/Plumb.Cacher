@@ -14,7 +14,7 @@ namespace Plumb.Cacher
         }
 
         /// <summary>
-        /// The collection that actually contains the cached items
+        /// The collection that actually contains the cached items.
         /// </summary>
         protected virtual ConcurrentDictionary<string, Lazy<CacheItem>> cache { get; set; }
 
@@ -25,34 +25,52 @@ namespace Plumb.Cacher
 
         /// <summary>
         /// The default number of seconds that an item should remain in cache before being evicted. 
-        /// Null means infinite
+        /// null means items remain in cache indefinitely (until the cache class is garbage collected)
         /// </summary>
         protected virtual int? defaultMillisecondsToLive { get; set; }
 
         /// <summary>
-        /// Adds or replaces the item in the cache with this key.
-        /// This is not threadsafe, so only use it when you will not have race conditions
+        /// Adds or replaces an item in the cache. 
+        /// This item will live in cache for the default number of milliseconds.
         /// </summary>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        public void AddOrReplace(string key, object value, int? millisecondsToLive = null)
+        /// <param name="key">The unique key used to identify this item</param>
+        /// <param name="value">The item to be cached</param>
+        public void AddOrReplace(string key, object value)
         {
-            //remove the existing item, if one exists
-            this.Remove(key);
-            this.Resolve(key, () =>
-            {
-                return value;
-            }, millisecondsToLive);
+            this.AddOrReplace(key, value, this.defaultMillisecondsToLive);
         }
 
         /// <summary>
-        /// Determines if the cache contains an item with the specified key. It is not recommended to use ContainsKey 
-        /// in combination with Add() because in multi-threaded environments, this could lead to some unexpected 
-        /// results due to race conditions. Consider using Resolve() instead.
+        /// Adds or replaces an item in the cache.
+        /// </summary>
+        /// <param name="key">The unique key used to identify this item</param>
+        /// <param name="value">The item to be cached</param>
+        /// <param name="millisecondsToLive">
+        ///     The number of milliseconds that this item should remain in the cache. 
+        ///     If null, the item will live in cache indefinitely 
+        /// </param>
+        public void AddOrReplace(string key, object value, int? millisecondsToLive)
+        {
+            lock (this.cache)
+            {
+                //remove the existing item, if one exists
+                this.Remove(key);
+                this.Resolve(key, () =>
+                {
+                    return value;
+                }, millisecondsToLive);
+            }
+        }
+
+        /// <summary>
+        /// Determines if the cache contains an item with the specified key. 
+        /// It is not recommended to use ContainsKey in combination with Add() 
+        /// because in multi-threaded environments, this could lead to some unexpected results 
+        /// due to race conditions. Consider using Resolve() instead.
         /// 
         /// If the item has expired, the cache will NOT contain it
         /// </summary>
-        /// <param name="key">The key for the item in question</param>
+        /// <param name="key">The unique key used to identify the item</param>
         /// <returns></returns>
         public virtual bool ContainsKey(string key)
         {
@@ -61,10 +79,11 @@ namespace Plumb.Cacher
         }
 
         /// <summary>
-        /// Evicts all expired items from the cache. This is called automatically by every internal public method, 
-        /// so it is unlikely that it needs to be called externally.
+        /// Evicts all expired items from the cache. 
+        /// This is called automatically by every internal public method.
+        /// It is unlikely that this method will need to be called externally.
         /// 
-        /// If nothing needs to be evicted, this should be extremely fast
+        /// If nothing needs to be evicted, this method should be extremely fast.
         /// </summary>
         public virtual void EvictExpiredItems()
         {
@@ -95,9 +114,11 @@ namespace Plumb.Cacher
         }
 
         /// <summary>
-        /// Get the item with the specified key
+        /// Get the item with the specified key.
+        /// An exception is thrown when no item with the specified key is found.
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="key">The unique key used to identify the item.</param>
+        /// <exception cref="System.Exception">Thrown when no item with the specified key is found.</exception>
         /// <returns></returns>
         public object Get(string key)
         {
@@ -107,9 +128,11 @@ namespace Plumb.Cacher
 
         /// <summary>
         /// Get the item with the specified key. 
+        /// An exception is thrown when no item with the specified key is found.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="key"></param>
+        /// <param name="key">The unique key used to identify the item.</param>
+        /// <exception cref="System.Exception">Thrown when no item with the specified key is found.</exception>
         /// <returns></returns>
         public T Get<T>(string key)
         {
@@ -118,10 +141,53 @@ namespace Plumb.Cacher
         }
 
         /// <summary>
-        /// Get the number of milliseconds remaining until the item will be evicted
+        /// Get the item with the specified key, or a default value if no item with that key exists
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="key">The unique key used to identify the item.</param>
+        /// <param name="defaultValue">A default value to return if the item was not found</param>
         /// <returns></returns>
+        public object Get(string key, object defaultValue)
+        {
+            return Get<object>(key, defaultValue);
+        }
+
+        /// <summary>
+        /// Get the item with the specified key, or a default value if no item with that key exists
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key">The unique key used to identify the item.</param>
+        /// <param name="defaultValue">A default value to return if the item was not found</param>
+        /// <returns></returns>
+        public T Get<T>(string key, T defaultValue)
+        {
+            //if we know for sure the item isn't in the cache, return the default value
+            if (!this.ContainsKey(key))
+            {
+                return defaultValue;
+            }
+            else
+            {
+                //try to get the value. if it has been removed between our ContainsKey call above and the Get call below, catch it and return the default value
+                try
+                {
+                    return Get<T>(key);
+                }
+                catch (Exception)
+                {
+                    return defaultValue;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the number of milliseconds remaining until the item will be evicted. 
+        /// All cache items have an eviction date. However, non-expiring cache items (those with millisecondsToLive=null), 
+        /// will return a very large millisecondsRemaining value, equating to roughly 10,000 years in the future. 
+        /// An exception is thrown when no item with the specify key is found.
+        /// </summary>
+        /// <param name="key">The unique key used to identify the item</param>
+        /// <exception cref="System.Exception">Thrown when no item with the specified key is found</exception>
+        /// <returns>The number of milliseconds until the cache item will expire</returns>
         public double GetMillisecondsRemaining(string key)
         {
             this.EvictExpiredItems();
@@ -137,14 +203,32 @@ namespace Plumb.Cacher
 
         /// <summary>
         /// Gets the value with specified the key. If no item with that key exists, 
-        /// the factory function is called to construct a new value
+        /// the factory function is called to construct a new value.
+        /// If the factory function is called, the item is stored with the default millisecondsToLive.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="key"></param>
-        /// <param name="factory"></param>
-        /// <param name="millisecondsToLive"></param>
-        /// <returns></returns>
-        public T Resolve<T>(string key, Func<T> factory, int? millisecondsToLive = null)
+        /// <param name="key">The unique key used to identify the item</param>
+        /// <param name="factory">A factory function that is called when the item is not in the 
+        /// cache, and a new copy of the item needs to be generated</param>
+        /// <returns>The item from cache</returns>
+        public T Resolve<T>(string key, Func<T> factory)
+        {
+            return Resolve(key, factory, this.defaultMillisecondsToLive);
+        }
+
+        /// <summary>
+        /// Gets the value with specified the key. If no item with that key exists, 
+        /// the factory function is called to construct a new value.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key">The unique key used to identify the item.</param>
+        /// <param name="factory">A factory function that is called when the item is not in the 
+        /// cache, and a new copy of the item needs to be generated.</param>
+        /// <param name="millisecondsToLive">The number of milliseconds that this item should remain in the cache. 
+        ///     If null, the item will live in cache indefinitely .
+        /// </param>
+        /// <returns>The item from cache</returns>
+        public T Resolve<T>(string key, Func<T> factory, int? millisecondsToLive)
         {
             this.EvictExpiredItems();
 
@@ -187,8 +271,10 @@ namespace Plumb.Cacher
         /// Immediately removes an item from cache with the specified name. 
         /// If no key with that name exists, no exception will be thrown. 
         /// </summary>
-        /// <param name="key"></param>
-        public void Remove(string key)
+        /// <param name="key">The unique key used to identify the item</param>
+        /// <returns>True if an item was removed. 
+        /// False if no item was removed because it didn't exist in cache to begin with.</returns>
+        public bool Remove(string key)
         {
             this.EvictExpiredItems();
             Lazy<CacheItem> lazy;
@@ -201,14 +287,20 @@ namespace Plumb.Cacher
                 {
                     this.evictionOrderList.Remove(lazy.Value.EvictionDate, lazy.Value);
                 }
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
         /// <summary>
-        /// Reset the timer on a specific cache item. If it still exists in cache, reset it. If it does not
-        /// exist in cache, no action is performed.
+        /// Reset the timer on a specific cache item. If it still exists in cache, reset it.
+        /// An exception is thrown when no item with the specify key is found.
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="key">The unique key used to identify the item</param>
+        /// <exception cref="System.Exception">Thrown when no item with the specified key is found</exception>
         public void Reset(string key)
         {
             this.EvictExpiredItems();
@@ -219,13 +311,10 @@ namespace Plumb.Cacher
                 try
                 {
                     var cacheItem = this.cache[key].Value;
-                    lock (evictionOrderList)
+                    lock (this.evictionOrderList)
                     {
                         evictionOrderList.Remove(cacheItem.EvictionDate, cacheItem);
-                    }
-                    cacheItem.Reset();
-                    lock (evictionOrderList)
-                    {
+                        cacheItem.Reset();
                         evictionOrderList.Add(cacheItem.EvictionDate, cacheItem);
                     }
                 }
@@ -234,8 +323,15 @@ namespace Plumb.Cacher
                     throw new Exception("No item with that key could be found");
                 }
             }
+            else
+            {
+                throw new Exception("No item with that key could be found");
+            }
         }
 
+        /// <summary>
+        /// Remove all items from the cache. 
+        /// </summary>
         public void Clear()
         {
             this.cache.Clear();
@@ -246,8 +342,12 @@ namespace Plumb.Cacher
         }
 
         /// <summary>
-        /// Allow dictionary-like access to the cache items. Will fail if the item is not there.
+        /// Get the item from the cache with the specified key. 
+        /// An exception is thrown if cache does not contain the specified key.
+        /// An exception is thrown when no item with the specify key is found.
         /// </summary>
+        /// <param name="index"></param>
+        /// <exception cref="System.Exception">Thrown when no item with the specified key is found</exception>
         /// <returns></returns>
         public object this[string index]
         {

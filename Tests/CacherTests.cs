@@ -68,6 +68,45 @@ namespace Tests
         }
 
         [Fact]
+        public void GetThrowsExceptionWhenNotFound()
+        {
+            try
+            {
+                var item = cache.Get("something");
+                Assert.True(false, "Should have thrown an exception");
+            }
+            catch (Exception)
+            {
+                Assert.True(true);
+            }
+
+            try
+            {
+                var item = cache.Get<string>("something");
+                Assert.True(false, "Should have thrown an exception");
+            }
+            catch (Exception)
+            {
+                Assert.True(true);
+            }
+        }
+
+        [Fact]
+        public void GetWithDefaults()
+        {
+            //test non-generic
+            Assert.Equal(1, cache.Get("something", 1));
+            Assert.Equal("cat", cache.Get("something", "cat"));
+
+            //test generic
+            Assert.Equal(1, cache.Get<int>("something", 1));
+            Assert.Equal("cat", cache.Get<string>("something", "cat"));
+
+
+        }
+
+
+        [Fact]
         public void Set()
         {
             //set when it's not there.
@@ -81,10 +120,12 @@ namespace Tests
         public void SetResetsTimer()
         {
             cache.AddOrReplace("name", "Bob", 10);
-            Assert.Equal(10, Math.Ceiling(cache.GetMillisecondsRemaining("name")));
+            //if the test runs slow, the milliseconds won't be exact...so verify that the milliseconds is close
+            Assert.InRange(Math.Ceiling(cache.GetMillisecondsRemaining("name")), 5, 10);
 
             cache.AddOrReplace("name", "Bob", 20);
-            Assert.Equal(20, Math.Ceiling(cache.GetMillisecondsRemaining("name")));
+            //if the test runs slow, the milliseconds won't be exact...so verify that the milliseconds is close
+            Assert.InRange(Math.Ceiling(cache.GetMillisecondsRemaining("name")), 15, 20);
         }
 
         [Fact]
