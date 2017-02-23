@@ -25,9 +25,10 @@ namespace Plumb.Cacher
 
         /// <summary>
         /// The default number of seconds that an item should remain in cache before being evicted. 
-        /// null means items remain in cache indefinitely (until the cache class is garbage collected)
+        /// null means items remain in cache indefinitely (until the cache class is garbage collected).
+        /// If changed after constructor, only new items will take this value
         /// </summary>
-        protected virtual int? defaultMillisecondsToLive { get; set; }
+        public virtual int? defaultMillisecondsToLive { get; set; }
 
         /// <summary>
         /// Adds or replaces an item in the cache. 

@@ -11,7 +11,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>An in-memory, thread-safe, self-expiring cache.</summary>
     <description>An in-memory, thread-safe, self-expiring cache.</description>
-    <releaseNotes>Added better error messaging when recursive resolves occur.</releaseNotes>
+    <releaseNotes>Made Cache.defaultMillisecondsToLive public</releaseNotes>
     <copyright>Copyright 2017</copyright>
     <tags>cacher expiration cache caching multi-threading thread-safety</tags>
     <frameworkAssemblies>
