@@ -246,8 +246,17 @@ namespace Plumb.Cacher
                  return lazyResult;
              });
 
-            //force the lazy class to load the value in a separate line, just for debugging purposes
-            var cacheItem = lazyCacheItem.Value;
+            CacheItem cacheItem;
+            try
+            {
+                //force the lazy class to load the value in a separate line, just for debugging purposes
+                cacheItem = lazyCacheItem.Value;
+            }
+            catch (System.InvalidOperationException e)
+            {
+                this.Remove(key);
+                throw new Exception("Possible recursive resolve() detected", e);
+            }
 
             //add this item to the eviction keys list
             lock (evictionOrderList)
@@ -263,7 +272,9 @@ namespace Plumb.Cacher
             }
             else
             {
+
                 return (T)cacheItem.Value;
+
             }
         }
 

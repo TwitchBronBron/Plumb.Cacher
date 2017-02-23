@@ -289,15 +289,52 @@ namespace Tests
                 cache.Remove("name");
             }
         }
-    }
 
-    class TestCache : Cache
-    {
-        public ConcurrentDictionary<string, Lazy<CacheItem>> theCache
+        [Fact]
+        public void ResolveCatchesRecursion()
         {
-            get
+            try
             {
-                return base.cache;
+                //call to resolve the same cache within the same cache
+                cache.Resolve("something", () =>
+                {
+                    return cache.Resolve("something", () =>
+                    {
+                        return true;
+                    });
+                });
+            }
+            catch (Exception e)
+            {
+                Assert.Equal("Possible recursive resolve() detected", e.Message);
+            }
+
+            //the previous failure should have removed the cache item
+            Assert.Equal(true, cache.Resolve("something", () => { return true; }));
+
+            //regular exceptions should be thrown with their messages
+            try
+            {
+                //call to resolve the same cache within the same cache
+                cache.Resolve<int>("somethingElse", () =>
+                {
+                    throw new Exception("Custom message");
+                });
+            }
+            catch (Exception e)
+            {
+                Assert.Equal("Custom message", e.Message);
+            }
+        }
+
+        class TestCache : Cache
+        {
+            public ConcurrentDictionary<string, Lazy<CacheItem>> theCache
+            {
+                get
+                {
+                    return base.cache;
+                }
             }
         }
     }
