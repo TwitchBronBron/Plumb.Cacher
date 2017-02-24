@@ -258,6 +258,11 @@ namespace Plumb.Cacher
                 this.Remove(key);
                 throw new Exception("Possible recursive resolve() detected", e);
             }
+            catch (System.Exception e)
+            {
+                this.Remove(key);
+                throw e;
+            }
 
             //add this item to the eviction keys list
             lock (evictionOrderList)

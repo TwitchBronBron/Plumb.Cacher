@@ -11,7 +11,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>An in-memory, thread-safe, self-expiring cache.</summary>
     <description>An in-memory, thread-safe, self-expiring cache.</description>
-    <releaseNotes>Made Cache.defaultMillisecondsToLive public</releaseNotes>
+    <releaseNotes>Fixed bug that now removes item from cache during resolve when an exception happens.</releaseNotes>
     <copyright>Copyright 2017</copyright>
     <tags>cacher expiration cache caching multi-threading thread-safety</tags>
     <frameworkAssemblies>

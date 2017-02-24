@@ -291,6 +291,25 @@ namespace Tests
         }
 
         [Fact]
+        public void ResolveDoesNotSaveItemWhenExceptionIsThrown()
+        {
+            Assert.False(cache.ContainsKey("item"));
+            try
+            {
+                cache.Resolve("item", () =>
+                {
+                    throw new Exception("AAA");
+                    return true;
+                });
+                Assert.False(true, "should not have run this line");
+            }
+            catch (Exception)
+            {
+                Assert.False(cache.ContainsKey("item"), "item should not be included in the cache");
+            }
+        }
+
+        [Fact]
         public void ResolveCatchesRecursion()
         {
             try
