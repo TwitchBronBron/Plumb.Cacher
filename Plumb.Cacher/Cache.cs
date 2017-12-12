@@ -2,33 +2,41 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Plumb.Cacher
 {
+    /// <summary>
+    /// Caches items, and expires them after set amounts of time
+    /// </summary>
     public class Cache
     {
+        /// <summary>
+        /// Constructor for the Cache class.
+        /// </summary>
+        /// <param name="defaultMillisecondsToLive">the default number of milliseconds that a cache item should live in cache</param>
         public Cache(int? defaultMillisecondsToLive = null)
         {
-            this.defaultMillisecondsToLive = defaultMillisecondsToLive;
-            this.cache = new ConcurrentDictionary<string, Lazy<CacheItem>>();
+            this.DefaultMillisecondsToLive = defaultMillisecondsToLive;
+            this.InternalCache = new ConcurrentDictionary<string, Lazy<CacheItem>>();
         }
 
         /// <summary>
         /// The collection that actually contains the cached items.
         /// </summary>
-        protected virtual ConcurrentDictionary<string, Lazy<CacheItem>> cache { get; set; }
+        protected virtual ConcurrentDictionary<string, Lazy<CacheItem>> InternalCache { get; set; }
 
         /// <summary>
         /// A list of all current cache item keys sorted by their eviction date.
         /// </summary>
-        protected virtual SortedDuplicatesList<DateTime, CacheItem> evictionOrderList { get; set; } = new SortedDuplicatesList<DateTime, CacheItem>();
+        protected virtual SortedDuplicatesList<DateTime, CacheItem> EvictionOrderList { get; set; } = new SortedDuplicatesList<DateTime, CacheItem>();
 
         /// <summary>
         /// The default number of seconds that an item should remain in cache before being evicted. 
         /// null means items remain in cache indefinitely (until the cache class is garbage collected).
         /// If changed after constructor, only new items will take this value
         /// </summary>
-        public virtual int? defaultMillisecondsToLive { get; set; }
+        public virtual int? DefaultMillisecondsToLive { get; set; }
 
         /// <summary>
         /// Adds or replaces an item in the cache. 
@@ -38,7 +46,7 @@ namespace Plumb.Cacher
         /// <param name="value">The item to be cached</param>
         public void AddOrReplace(string key, object value)
         {
-            this.AddOrReplace(key, value, this.defaultMillisecondsToLive);
+            this.AddOrReplace(key, value, this.DefaultMillisecondsToLive);
         }
 
         /// <summary>
@@ -52,7 +60,7 @@ namespace Plumb.Cacher
         /// </param>
         public void AddOrReplace(string key, object value, int? millisecondsToLive)
         {
-            lock (this.cache)
+            lock (this.InternalCache)
             {
                 //remove the existing item, if one exists
                 this.Remove(key);
@@ -76,7 +84,7 @@ namespace Plumb.Cacher
         public virtual bool ContainsKey(string key)
         {
             this.EvictExpiredItems();
-            return this.cache.ContainsKey(key);
+            return this.InternalCache.ContainsKey(key);
         }
 
         /// <summary>
@@ -88,10 +96,10 @@ namespace Plumb.Cacher
         /// </summary>
         public virtual void EvictExpiredItems()
         {
-            lock (evictionOrderList)
+            lock (EvictionOrderList)
             {
                 var itemsToRemove = new List<KeyValuePair<DateTime, CacheItem>>();
-                foreach (var kvp in this.evictionOrderList)
+                foreach (var kvp in this.EvictionOrderList)
                 {
                     //if the item is not expired, no other items in this list are expired because the list is orderd. stop now
                     if (kvp.Value.IsExpired == false)
@@ -105,11 +113,11 @@ namespace Plumb.Cacher
                 //now that we have the list of items to remove...remove them
                 foreach (var kvp in itemsToRemove)
                 {
-                    this.evictionOrderList.Remove(kvp);
+                    this.EvictionOrderList.Remove(kvp);
 
                     //remove it from the cache
                     Lazy<CacheItem> outValue;
-                    this.cache.TryRemove(kvp.Value.Key, out outValue);
+                    this.InternalCache.TryRemove(kvp.Value.Key, out outValue);
                 }
             }
         }
@@ -124,7 +132,7 @@ namespace Plumb.Cacher
         public object Get(string key)
         {
             this.EvictExpiredItems();
-            return Get<object>(key);
+            return this[key];
         }
 
         /// <summary>
@@ -138,7 +146,8 @@ namespace Plumb.Cacher
         public T Get<T>(string key)
         {
             this.EvictExpiredItems();
-            return (T)this[key];
+            var item = (T)this[key];
+            return item;
         }
 
         /// <summary>
@@ -194,7 +203,7 @@ namespace Plumb.Cacher
             this.EvictExpiredItems();
             try
             {
-                return this.cache[key].Value.MillisecondsRemaining;
+                return this.InternalCache[key].Value.MillisecondsRemaining;
             }
             catch (Exception)
             {
@@ -202,19 +211,33 @@ namespace Plumb.Cacher
             }
         }
 
+
         /// <summary>
         /// Gets the value with specified the key. If no item with that key exists, 
         /// the factory function is called to construct a new value.
-        /// If the factory function is called, the item is stored with the default millisecondsToLive.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="key">The unique key used to identify the item</param>
+        /// <param name="key">The unique key used to identify the item.</param>
         /// <param name="factory">A factory function that is called when the item is not in the 
-        /// cache, and a new copy of the item needs to be generated</param>
+        /// cache, and a new copy of the item needs to be generated.</param>
+        /// <param name="millisecondsToLive">The number of milliseconds that this item should remain in the cache. 
+        ///     If null, the item will live in cache indefinitely .
+        /// </param>
         /// <returns>The item from cache</returns>
-        public T Resolve<T>(string key, Func<T> factory)
+        public T Resolve<T>(string key, Func<T> factory, int? millisecondsToLive = null)
         {
-            return Resolve(key, factory, this.defaultMillisecondsToLive);
+            try
+            {
+                return ResolveAsync(key, () =>
+                {
+                    return Task.FromResult(factory());
+                }, millisecondsToLive).Result;
+            }
+            //if this is an aggregate exception, the async stack is aggregating the regular exceptions. Throw the first one found
+            catch (AggregateException e)
+            {
+                throw e.InnerExceptions[0];
+            }
         }
 
         /// <summary>
@@ -229,13 +252,13 @@ namespace Plumb.Cacher
         ///     If null, the item will live in cache indefinitely .
         /// </param>
         /// <returns>The item from cache</returns>
-        public T Resolve<T>(string key, Func<T> factory, int? millisecondsToLive)
+        public async Task<T> ResolveAsync<T>(string key, Func<Task<T>> factory, int? millisecondsToLive = null)
         {
             this.EvictExpiredItems();
 
             var createdThisCall = false;
-            millisecondsToLive = millisecondsToLive != null ? millisecondsToLive : this.defaultMillisecondsToLive;
-            var lazyCacheItem = this.cache.GetOrAdd(key, (string k) =>
+            millisecondsToLive = millisecondsToLive != null ? millisecondsToLive : this.DefaultMillisecondsToLive;
+            var lazyCacheItem = this.InternalCache.GetOrAdd(key, (string k) =>
              {
                  //only allow a single thread to run this specific resolver function at a time. 
                  var lazyResult = new Lazy<CacheItem>(() =>
@@ -258,6 +281,11 @@ namespace Plumb.Cacher
                 this.Remove(key);
                 throw new Exception("Possible recursive resolve() detected", e);
             }
+            catch (ThreadAbortException e)
+            {
+                this.Remove(key);
+                throw new Exception("Possible recursive resolve() detected", e);
+            }
             catch (System.Exception e)
             {
                 this.Remove(key);
@@ -265,22 +293,21 @@ namespace Plumb.Cacher
             }
 
             //add this item to the eviction keys list
-            lock (evictionOrderList)
+            lock (EvictionOrderList)
             {
-                evictionOrderList.Add(cacheItem.EvictionDate, cacheItem);
+                EvictionOrderList.Add(cacheItem.EvictionDate, cacheItem);
             }
 
             //if the item expired and was NOT created this call, toss it and get a new one
             if (cacheItem.IsExpired && createdThisCall == false)
             {
                 this.Remove(key);
-                return this.Resolve(key, factory, millisecondsToLive);
+                return await this.ResolveAsync(key, factory, millisecondsToLive);
             }
             else
             {
-
-                return (T)cacheItem.Value;
-
+                var task = (Task<T>)cacheItem.Value;
+                return await task;
             }
         }
 
@@ -295,14 +322,14 @@ namespace Plumb.Cacher
         {
             this.EvictExpiredItems();
             Lazy<CacheItem> lazy;
-            this.cache.TryRemove(key, out lazy);
+            this.InternalCache.TryRemove(key, out lazy);
 
             if (lazy != null)
             {
                 //if we actually removed an item, remove it from the eviction order list
-                lock (this.evictionOrderList)
+                lock (this.EvictionOrderList)
                 {
-                    this.evictionOrderList.Remove(lazy.Value.EvictionDate, lazy.Value);
+                    this.EvictionOrderList.Remove(lazy.Value.EvictionDate, lazy.Value);
                 }
                 return true;
             }
@@ -322,17 +349,17 @@ namespace Plumb.Cacher
         {
             this.EvictExpiredItems();
             //try to reset this cache item's timer. 
-            if (this.cache.ContainsKey(key))
+            if (this.InternalCache.ContainsKey(key))
             {
                 //A race condition could exist that would allow it to be in cache above, but then missing here. So eat any exception where that would happen
                 try
                 {
-                    var cacheItem = this.cache[key].Value;
-                    lock (this.evictionOrderList)
+                    var cacheItem = this.InternalCache[key].Value;
+                    lock (this.EvictionOrderList)
                     {
-                        evictionOrderList.Remove(cacheItem.EvictionDate, cacheItem);
+                        EvictionOrderList.Remove(cacheItem.EvictionDate, cacheItem);
                         cacheItem.Reset();
-                        evictionOrderList.Add(cacheItem.EvictionDate, cacheItem);
+                        EvictionOrderList.Add(cacheItem.EvictionDate, cacheItem);
                     }
                 }
                 catch (Exception)
@@ -351,10 +378,10 @@ namespace Plumb.Cacher
         /// </summary>
         public void Clear()
         {
-            this.cache.Clear();
-            lock (evictionOrderList)
+            this.InternalCache.Clear();
+            lock (EvictionOrderList)
             {
-                this.evictionOrderList.Clear();
+                this.EvictionOrderList.Clear();
             }
         }
 
@@ -373,9 +400,12 @@ namespace Plumb.Cacher
                 this.EvictExpiredItems();
                 try
                 {
-                    return this.cache[index].Value.Value;
+                    var task = (Task)this.InternalCache[index].Value.Value;
+                    //make sure the task has finished
+                    task.Wait();
+                    return task.GetType().GetProperty("Result").GetValue(task);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     throw new Exception("No item with that key was found in the cache");
                 }

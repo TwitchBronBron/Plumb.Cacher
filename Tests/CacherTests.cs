@@ -51,7 +51,7 @@ namespace Tests
             cache.Resolve("name", () =>
             {
                 return "Bob";
-            });
+            }, 20000000);
 
             Assert.Equal("Bob", cache["name"]);
         }
@@ -296,10 +296,9 @@ namespace Tests
             Assert.False(cache.ContainsKey("item"));
             try
             {
-                cache.Resolve("item", () =>
+                cache.Resolve<bool>("item", () =>
                 {
                     throw new Exception("AAA");
-                    return true;
                 });
                 Assert.False(true, "should not have run this line");
             }
@@ -307,6 +306,16 @@ namespace Tests
             {
                 Assert.False(cache.ContainsKey("item"), "item should not be included in the cache");
             }
+        }
+
+        [Fact]
+        public async Task ResolveAsyncWorks()
+        {
+            var item = await cache.ResolveAsync<bool>("itWorks!", () =>
+            {
+                return Task.FromResult(true);
+            });
+            Assert.True(item);
         }
 
         [Fact]
@@ -352,7 +361,7 @@ namespace Tests
             {
                 get
                 {
-                    return base.cache;
+                    return base.InternalCache;
                 }
             }
         }
