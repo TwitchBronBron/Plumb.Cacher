@@ -11,8 +11,8 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>An in-memory, thread-safe, self-expiring cache.</summary>
     <description>An in-memory, thread-safe, self-expiring cache.</description>
-    <releaseNotes>Fixed bug that now removes item from cache during resolve when an exception happens.</releaseNotes>
-    <copyright>Copyright 2017</copyright>
+    <releaseNotes>Fixed bug that should mitigate several race conditions and prevent deadlocks.</releaseNotes>
+    <copyright>Copyright 2018</copyright>
     <tags>cacher expiration cache caching multi-threading thread-safety</tags>
     <frameworkAssemblies>
       <frameworkAssembly assemblyName="System" targetFramework=".NETFramework4.0" />

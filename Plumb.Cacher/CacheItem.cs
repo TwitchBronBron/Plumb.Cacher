@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 
 namespace Plumb.Cacher
 {
@@ -6,10 +7,10 @@ namespace Plumb.Cacher
     {
         public string Key;
 
-        public CacheItem(string key, object value, int? millisecondsToLive)
+        public CacheItem(string key, Lazy<object> value, int? millisecondsToLive)
         {
             this.Key = key;
-            this.Value = value;
+            this.LazyValue = value;
             this.MillisecondsToLive = millisecondsToLive;
 
             if (this.MillisecondsToLive != null)
@@ -19,10 +20,30 @@ namespace Plumb.Cacher
             Reset();
         }
 
+
+        internal Lazy<object> LazyValue;
+
         /// <summary>
         /// The value of the cache item
         /// </summary>
-        public object Value;
+        public object Value
+        {
+            get
+            {
+                return LazyValue.Value;
+            }
+        }
+
+        /// <summary>
+        /// Indicates whether this cache item was forcefully killed. Helpful in resolve functions when deciding whether to throw an exception or not.
+        /// </summary>
+        public bool IsKilled = false;
+
+        /// <summary>
+        /// The thread used when resolving the value in this item
+        /// </summary>
+        public Thread ResolveThread;
+
 
         /// <summary>
         /// The number of milliseconds that this cache item should live before being evicted from the cache

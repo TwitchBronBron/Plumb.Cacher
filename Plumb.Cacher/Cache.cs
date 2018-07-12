@@ -96,7 +96,7 @@ namespace Plumb.Cacher
         /// </summary>
         public virtual void EvictExpiredItems()
         {
-            lock (EvictionOrderList)
+            lock (this.EvictionOrderList)
             {
                 var itemsToRemove = new List<KeyValuePair<DateTime, CacheItem>>();
                 foreach (var kvp in this.EvictionOrderList)
@@ -264,17 +264,28 @@ namespace Plumb.Cacher
                  var lazyResult = new Lazy<CacheItem>(() =>
                  {
                      createdThisCall = true;
-                     var value = factory();
-                     return new CacheItem(key, value, millisecondsToLive);
+
+                     var lazyCacheItemValue = new Lazy<object>(() =>
+                     {
+                         return factory();
+                     });
+                     var constructedCacheItem = new CacheItem(key, lazyCacheItemValue, millisecondsToLive);
+                     //save the thread to the cache item so it can be terminated if need be
+                     constructedCacheItem.ResolveThread = System.Threading.Thread.CurrentThread;
+                     return constructedCacheItem;
                  }, LazyThreadSafetyMode.ExecutionAndPublication);
                  return lazyResult;
              });
 
-            CacheItem cacheItem;
+            CacheItem cacheItem = null;
             try
             {
-                //force the lazy class to load the value in a separate line, just for debugging purposes
+                //get the cache item from lazy
                 cacheItem = lazyCacheItem.Value;
+
+                //force the cache item to run its lazy value factory
+                var value = cacheItem.Value;
+
             }
             catch (System.InvalidOperationException e)
             {
@@ -291,9 +302,23 @@ namespace Plumb.Cacher
                 this.Remove(key);
                 throw e;
             }
+            finally
+            {
+                //clear the thread reference so it can be freed up
+                if (cacheItem != null)
+                {
+                    cacheItem.ResolveThread = null;
+                }
+            }
+
+            //if this cache item got killed, throw an exception
+            if (cacheItem != null && cacheItem.IsKilled)
+            {
+                throw new Exception("Cache item's resolver was forcibly killed before it could resolve");
+            }
 
             //add this item to the eviction keys list
-            lock (EvictionOrderList)
+            lock (this.EvictionOrderList)
             {
                 EvictionOrderList.Add(cacheItem.EvictionDate, cacheItem);
             }
@@ -316,9 +341,10 @@ namespace Plumb.Cacher
         /// If no key with that name exists, no exception will be thrown. 
         /// </summary>
         /// <param name="key">The unique key used to identify the item</param>
+        /// <param name="killActiveResolves">If true and there is an actively running resolve, the resolve (and its thread) will be terminated. Killing a thread is dangerous, so only pass in true if you are POSITIVE that your calling thread can handle being aborted mid-process.</param>
         /// <returns>True if an item was removed. 
         /// False if no item was removed because it didn't exist in cache to begin with.</returns>
-        public bool Remove(string key)
+        public bool Remove(string key, bool killActiveResolves = false)
         {
             this.EvictExpiredItems();
             Lazy<CacheItem> lazy;
@@ -329,7 +355,20 @@ namespace Plumb.Cacher
                 //if we actually removed an item, remove it from the eviction order list
                 lock (this.EvictionOrderList)
                 {
-                    this.EvictionOrderList.Remove(lazy.Value.EvictionDate, lazy.Value);
+                    var cacheItem = lazy.Value;
+                    this.EvictionOrderList.Remove(cacheItem.EvictionDate, cacheItem);
+
+                    //kill the cache item if it's still resolving
+                    if (killActiveResolves)
+                    {
+                        if (cacheItem.LazyValue.IsValueCreated == false)
+                        {
+                            cacheItem.IsKilled = true;
+                            //kill the ResolveThread for this cache item
+                            cacheItem.ResolveThread.Abort("Killed by thread " + Thread.CurrentThread.ManagedThreadId);
+                        }
+
+                    }
                 }
                 return true;
             }
@@ -374,12 +413,12 @@ namespace Plumb.Cacher
         }
 
         /// <summary>
-        /// Remove all items from the cache. 
+        /// Remove all items from the cache. This will not terminate any currently running resolves, but will allow all future calls to fetch fresh data.
         /// </summary>
         public void Clear()
         {
             this.InternalCache.Clear();
-            lock (EvictionOrderList)
+            lock (this.EvictionOrderList)
             {
                 this.EvictionOrderList.Clear();
             }
@@ -388,7 +427,6 @@ namespace Plumb.Cacher
         /// <summary>
         /// Get the item from the cache with the specified key. 
         /// An exception is thrown if cache does not contain the specified key.
-        /// An exception is thrown when no item with the specify key is found.
         /// </summary>
         /// <param name="index"></param>
         /// <exception cref="System.Exception">Thrown when no item with the specified key is found</exception>
@@ -400,12 +438,13 @@ namespace Plumb.Cacher
                 this.EvictExpiredItems();
                 try
                 {
-                    var task = (Task)this.InternalCache[index].Value.Value;
+                    var cacheItem = this.InternalCache[index].Value;
+                    var task = (Task)cacheItem.Value;
                     //make sure the task has finished
                     task.Wait();
                     return task.GetType().GetProperty("Result").GetValue(task);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     throw new Exception("No item with that key was found in the cache");
                 }

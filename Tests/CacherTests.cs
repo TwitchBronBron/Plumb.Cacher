@@ -291,6 +291,89 @@ namespace Tests
         }
 
         [Fact]
+        public void RemoveKillsActiveResolves()
+        {
+            var exitWhile = false;
+            var readerTask = Task.Factory.StartNew((Object obj) =>
+            {
+                try
+                {
+                    var value = cache.Resolve<string>("name", () =>
+                    {
+                        while (exitWhile == false)
+                        {
+                            Thread.Sleep(10);
+                        }
+                        return "bob";
+                    });
+                    Assert.False(true, "Should have thrown an exception");
+                }
+                catch (Exception e)
+                {
+                    Assert.True(true, "Exception was thrown where it should have been");
+                }
+            }, null);
+
+            while (cache.ContainsKey("name") == false)
+            {
+                Thread.Sleep(10);
+            }
+            //remove the item from cache, terminating all active resolvers for that name
+            cache.Remove("name", true);
+            while (readerTask.IsCompleted == false)
+            {
+                Thread.Sleep(10);
+            }
+        }
+
+        [Fact]
+        public void RemoveDoesNotKillWhenResolved()
+        {
+            cache.Resolve("name", () =>
+            {
+                return "bob";
+            });
+            Assert.True(cache.ContainsKey("name"));
+            //remove the item from cache, terminating all active resolvers for that name
+            cache.Remove("name", true);
+            Assert.False(cache.ContainsKey("name"));
+        }
+
+        [Fact]
+        public void DoesNotDeadlock()
+        {
+            var exitWhile = false;
+            var readerTask = Task.Factory.StartNew((Object obj) =>
+            {
+                var result = cache.Resolve("name", () =>
+                {
+                    while (exitWhile == false)
+                    {
+                        Thread.Sleep(100);
+                    }
+                    return "bob";
+                });
+                var k = result;
+            }, null);
+
+            //spin until the cache has the key
+            while (cache.ContainsKey("name") == false)
+            {
+                Thread.Sleep(100);
+            }
+            //remove the item from cache
+            cache.Remove("name");
+            //exit the reader's while loop
+            exitWhile = true;
+
+            //wait for the reader task to complete
+            Task.WaitAll(new[] { readerTask });
+
+            //what is in the cache?
+            Assert.False(cache.ContainsKey("name"));
+        }
+
+        [Fact]
         public void ResolveDoesNotSaveItemWhenExceptionIsThrown()
         {
             Assert.False(cache.ContainsKey("item"));
