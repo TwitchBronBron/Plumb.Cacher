@@ -308,7 +308,7 @@ namespace Tests
                     });
                     Assert.False(true, "Should have thrown an exception");
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     Assert.True(true, "Exception was thrown where it should have been");
                 }

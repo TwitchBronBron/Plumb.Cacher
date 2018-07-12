@@ -4,11 +4,20 @@ using System.Collections.Generic;
 
 namespace Plumb.Cacher
 {
+    /// <summary>
+    /// A sorted list that allows duplicates
+    /// </summary>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
     public class SortedDuplicatesList<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : IComparable
     {
         private List<KeyValuePair<TKey, TValue>> list;
         private IComparer<KeyValuePair<TKey, TValue>> comparer;
+
+        /// <summary>
+        /// Parameterless constructor
+        /// </summary>
         public SortedDuplicatesList()
         {
             list = new List<KeyValuePair<TKey, TValue>>();
@@ -37,6 +46,9 @@ namespace Plumb.Cacher
             this.list.Clear();
         }
 
+        /// <summary>
+        /// All of the items in this list
+        /// </summary>
         public List<KeyValuePair<TKey, TValue>> Items
         {
             get
@@ -69,6 +81,10 @@ namespace Plumb.Cacher
             Remove(kvp);
         }
 
+        /// <summary>
+        /// Get the enumerator
+        /// </summary>
+        /// <returns></returns>
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
             return list.GetEnumerator();
@@ -82,9 +98,20 @@ namespace Plumb.Cacher
 
     }
 
+    /// <summary>
+    /// Compare the results of KVP keys
+    /// </summary>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
     public class KvpKeyComparer<TKey, TValue> : IComparer<KeyValuePair<TKey, TValue>>
      where TKey : IComparable
     {
+        /// <summary>
+        /// Basic Constructor
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
         public int Compare(KeyValuePair<TKey, TValue> x, KeyValuePair<TKey, TValue> y)
         {
             return x.Key.CompareTo(y.Key);

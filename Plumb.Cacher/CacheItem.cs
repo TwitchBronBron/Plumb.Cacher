@@ -3,10 +3,22 @@ using System.Threading;
 
 namespace Plumb.Cacher
 {
+    /// <summary>
+    /// Holds a single cache value, and keeps track of its state
+    /// </summary>
     public class CacheItem
     {
+        /// <summary>
+        /// The unique key used to reference this item
+        /// </summary>
         public string Key;
 
+        /// <summary>
+        /// Construct a new cache item.
+        /// </summary>
+        /// <param name="key">The unique key used to reference this item</param>
+        /// <param name="value">The value to be stored in cache (wrapped in a lazy container)</param>
+        /// <param name="millisecondsToLive">The number of milliseconds that this cache item should live</param>
         public CacheItem(string key, Lazy<object> value, int? millisecondsToLive)
         {
             this.Key = key;
