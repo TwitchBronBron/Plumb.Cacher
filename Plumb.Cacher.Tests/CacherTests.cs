@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 
-namespace Tests
+namespace Plumb.Cacher.Tests
 {
     public class CacherTests
     {
@@ -291,7 +291,7 @@ namespace Tests
         }
 
         [Fact]
-        public void RemoveKillsActiveResolves()
+        public void ResolverThrowsWhenRemoveMarksItemForRemoval()
         {
             var exitWhile = false;
             var readerTask = Task.Factory.StartNew((Object obj) =>
@@ -300,31 +300,120 @@ namespace Tests
                 {
                     var value = cache.Resolve<string>("name", () =>
                     {
+                        //create a CPU-bound loop so that thread interrupts won't work
                         while (exitWhile == false)
                         {
-                            Thread.Sleep(10);
+                            // Thread.Sleep(10);
                         }
                         return "bob";
                     });
                     Assert.False(true, "Should have thrown an exception");
                 }
-                catch (Exception)
+                catch
                 {
                     Assert.True(true, "Exception was thrown where it should have been");
                 }
             }, null);
 
+            //wait for the cache to show the key
             while (cache.ContainsKey("name") == false)
             {
                 Thread.Sleep(10);
             }
+
             //remove the item from cache, terminating all active resolvers for that name
-            cache.Remove("name", true);
+            try
+            {
+                cache.Remove("name", true);
+            }
+            catch
+            {
+
+            }
+            exitWhile = true;
+
+            var waitCount = 0;
+
+            //wait for the reader task to finish.
             while (readerTask.IsCompleted == false)
+            {
+                waitCount++;
+                Thread.Sleep(100);
+                if (waitCount > 10)
+                {
+                    throw new Exception("Test did not complete in a timely fashion, there is probably a bug in the code");
+                }
+            }
+        }
+
+        [Fact]
+        public void ResolverDoesNotThrowWhenRemoveMarksItemForRemovalAndNewValueIsResolvedBeforehand()
+        {
+            var exitWhile = false;
+            var readerTask = Task.Factory.StartNew((Object obj) =>
+            {
+                try
+                {
+                    var value = cache.Resolve<string>("name", () =>
+                    {
+                        //create a CPU-bound loop so that thread interrupts won't work
+                        while (exitWhile == false)
+                        {
+                            // Thread.Sleep(10);
+                        }
+                        return "bob";
+                    });
+                    Assert.True(true, "Should not have thrown an exception");
+                }
+                catch
+                {
+                    Assert.True(false, "Exception should not have been thrown");
+                }
+            }, null);
+
+            //wait for the cache to show the key
+            while (cache.ContainsKey("name") == false)
             {
                 Thread.Sleep(10);
             }
+
+            //remove the item from cache, terminating all active resolvers for that name
+            cache.Remove("name", true);
+            cache.AddOrReplace("name", "Bob");
+
+            exitWhile = true;
+
+            var waitCount = 0;
+
+            //wait for the reader task to finish.
+            while (readerTask.IsCompleted == false)
+            {
+                waitCount++;
+                Thread.Sleep(100);
+                if (waitCount > 10)
+                {
+                    throw new Exception("Test did not complete in a timely fashion, there is probably a bug in the code");
+                }
+            }
         }
+
+        [Fact]
+        public void ResetThrowsWhenKeyNotFound()
+        {
+            Assert.Throws<Exception>(() =>
+            {
+                cache.Reset("key that doesn't exist");
+            });
+        }
+
+        [Fact]
+        public void GenericGetWorks()
+        {
+            cache.AddOrReplace("name", "bob");
+            var name = (string)cache.Get("name", "john");
+            Assert.Equal("bob", name);
+        }
+
 
         [Fact]
         public void RemoveDoesNotKillWhenResolved()
@@ -421,7 +510,7 @@ namespace Tests
             }
 
             //the previous failure should have removed the cache item
-            Assert.Equal(true, cache.Resolve("something", () => { return true; }));
+            Assert.True(cache.Resolve("something", () => { return true; }));
 
             //regular exceptions should be thrown with their messages
             try

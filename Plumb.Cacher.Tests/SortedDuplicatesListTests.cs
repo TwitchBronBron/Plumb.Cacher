@@ -1,16 +1,32 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Plumb.Cacher;
 using Xunit;
 
-namespace Tests
+namespace Plumb.Cacher.Tests
 {
     public class TestSortedDuplicatesList
     {
-        public void Init()
+
+        [Fact]
+        public void GetEnumeratorWorks()
         {
+            var list1 = new SortedDuplicatesList<int, int>();
+            list1.Add(0, 0);
+            list1.Add(1, 1);
+            list1.Add(2, 2);
+            IEnumerable ilist = (IEnumerable)list1;
+
+            var idx = 0;
+            foreach (var item in ilist)
+            {
+                var kvp = (KeyValuePair<int, int>)item;
+                Assert.Equal(kvp, list1[idx]);
+                idx++;
+            }
         }
 
         [Fact]
@@ -67,8 +83,8 @@ namespace Tests
 
             Assert.Equal(2, list.Items.Count);
 
-            Assert.Equal(1, list.Items.Where(x => x.Value == 1).ToList().Count());
-            Assert.Equal(1, list.Items.Where(x => x.Value == 2).ToList().Count());
+            Assert.Single(list.Items.Where(x => x.Value == 1));
+            Assert.Single(list.Items.Where(x => x.Value == 2));
         }
 
         [Fact]
@@ -81,9 +97,9 @@ namespace Tests
             list.Add("a", 3);
 
             list.Remove("a", 2);
-            Assert.Equal(1, list.Items.Where(x => x.Value == 1).ToList().Count());
-            Assert.Equal(0, list.Items.Where(x => x.Value == 2).ToList().Count());
-            Assert.Equal(1, list.Items.Where(x => x.Value == 3).ToList().Count());
+            Assert.Single(list.Items.Where(x => x.Value == 1));
+            Assert.Empty(list.Items.Where(x => x.Value == 2));
+            Assert.Single(list.Items.Where(x => x.Value == 3));
         }
 
         [Fact]
@@ -97,7 +113,7 @@ namespace Tests
             var possibleValues = new List<int>() { 1, 2, 3 };
             foreach (var kvp in list)
             {
-                Assert.True(possibleValues.Contains(kvp.Value));
+                Assert.Contains(kvp.Value, possibleValues);
             }
         }
     }

@@ -95,7 +95,17 @@ namespace Plumb.Cacher
             return GetEnumerator();
         }
 
-
+        /// <summary>
+        /// Get the item at the specified index
+        /// </summary>
+        /// <value></value>
+        public object this[int index]
+        {
+            get
+            {
+                return this.list[index];
+            }
+        }
     }
 
     /// <summary>

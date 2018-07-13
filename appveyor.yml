@@ -1,0 +1,32 @@
+version: '{build}'
+image: Visual Studio 2017
+init:
+  # Good practise, because Windows line endings are different from Unix/Linux ones
+  - cmd: git config --global core.autocrlf true
+
+before_build:
+  # Display .NET Core version
+  - cmd: dotnet --version
+  # Display minimal restore text
+  - cmd: dotnet restore --verbosity m
+build_script:
+  - cmd: dotnet pack ./Plumb.Cacher -c Release -o ../
+
+artifacts:
+  - path: '**\*.nupkg'
+
+test_script:
+  - cmd: dotnet test ./Plumb.Cacher.Tests/Plumb.Cacher.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Threshold=80
+
+deploy:
+  - provider: GitHub
+    name: GitHub_Release
+    release: $(APPVEYOR_REPO_TAG_NAME)
+    description: '$(APPVEYOR_REPO_TAG_NAME)'
+    auth_token:
+      secure: DltCzWLZlWBEDtaQYtoxdSVZH6cS0240H8T1MfhAiWu8yYSg9F92IdrhPqdC+jtQ
+    artifacts: '**\*.nupkg'
+    draft: false
+    prerelease: false
+    on:
+      appveyor_repo_tag: true 
