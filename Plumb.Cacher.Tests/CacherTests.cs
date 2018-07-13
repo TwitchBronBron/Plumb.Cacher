@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 
-namespace Tests
+namespace Plumb.Cacher.Tests
 {
     public class CacherTests
     {
@@ -300,9 +300,10 @@ namespace Tests
                 {
                     var value = cache.Resolve<string>("name", () =>
                     {
+                        //create a CPU-bound loop so that thread interrupts won't work
                         while (exitWhile == false)
                         {
-                            Thread.Sleep(10);
+                            // Thread.Sleep(10);
                         }
                         return "bob";
                     });
@@ -318,12 +319,39 @@ namespace Tests
             {
                 Thread.Sleep(10);
             }
-            //remove the item from cache, terminating all active resolvers for that name
-            cache.Remove("name", true);
-            while (readerTask.IsCompleted == false)
+            var removeExceptionWasThrown = false;
+            try
             {
-                Thread.Sleep(10);
+                //remove the item from cache, terminating all active resolvers for that name
+                cache.Remove("name", true);
             }
+            catch (Exception)
+            {
+                removeExceptionWasThrown = true;
+            }
+
+            //if this environment supports abort, then an exception should NOT have been thrown
+            if (ThreadExtensions.ThreadSupportsAbort())
+            {
+                if (removeExceptionWasThrown)
+                {
+                    throw new Exception("Exception should not be thrown during Cache.Remove.");
+                }
+                else
+                {
+                    //wait for the reader task to finish.
+                    while (readerTask.IsCompleted == false)
+                    {
+                        Thread.Sleep(10);
+                    }
+                }
+            }
+            else
+            {
+                //we should have seen an exception thrown since we couldn't abort the reader thread
+                Assert.True(removeExceptionWasThrown, "Remove didn't throw exception, but was supposed to since we couldn't kill resolve thread");
+            }
+
         }
 
         [Fact]
@@ -421,7 +449,7 @@ namespace Tests
             }
 
             //the previous failure should have removed the cache item
-            Assert.Equal(true, cache.Resolve("something", () => { return true; }));
+            Assert.True(cache.Resolve("something", () => { return true; }));
 
             //regular exceptions should be thrown with their messages
             try

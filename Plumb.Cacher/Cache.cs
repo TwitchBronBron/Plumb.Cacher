@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -341,7 +342,9 @@ namespace Plumb.Cacher
         /// If no key with that name exists, no exception will be thrown. 
         /// </summary>
         /// <param name="key">The unique key used to identify the item</param>
-        /// <param name="killActiveResolves">If true and there is an actively running resolve, the resolve (and its thread) will be terminated. Killing a thread is dangerous, so only pass in true if you are POSITIVE that your calling thread can handle being aborted mid-process.</param>
+        /// <param name="killActiveResolves">If true and there is an actively running resolve, the resolve (and its thread) will be terminated. 
+        /// Killing a thread is dangerous, so only pass in true if you are POSITIVE that your calling thread can handle being aborted mid-process. 
+        /// If for some reason the thread cannot be killed, THIS thread will throw an exception.</param>
         /// <returns>True if an item was removed. 
         /// False if no item was removed because it didn't exist in cache to begin with.</returns>
         public bool Remove(string key, bool killActiveResolves = false)
@@ -364,10 +367,9 @@ namespace Plumb.Cacher
                         if (cacheItem.LazyValue.IsValueCreated == false)
                         {
                             cacheItem.IsKilled = true;
-                            //kill the ResolveThread for this cache item
-                            cacheItem.ResolveThread.Abort("Killed by thread " + Thread.CurrentThread.ManagedThreadId);
+                            //try to kill the ResolveThread for this cache item
+                            cacheItem.ResolveThread.AbortSafe(new[] { "Killed by thread " + Thread.CurrentThread.ManagedThreadId });
                         }
-
                     }
                 }
                 return true;

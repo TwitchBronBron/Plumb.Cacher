@@ -1,65 +1,16 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{D2ED2FD7-6596-428C-B6C4-9FFB5A6EEA59}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Plumb.Cacher</RootNamespace>
-    <AssemblyName>Plumb.Cacher</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\Plumb.Cacher.xml</DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\Plumb.Cacher.xml</DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="CacheItem.cs" />
-    <Compile Include="Cache.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SortedDuplicatesList.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Plumb.Cacher.nuspec">
-      <SubType>Designer</SubType>
-    </None>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <PackageId>Plumb.Cacher</PackageId>
+        <Version>2.1.0</Version>
+        <Authors>Bronley Plumb</Authors>
+        <Description>An in-memory, thread-safe, self-expiring cache.</Description>
+        <Copyright>Copyright 2016-2018 Bronley plumb</Copyright>
+        <PackageProjectUrl>https://github.com/TwitchBronBron/Plumb.Cacher</PackageProjectUrl>
+        <PackageReleaseNotes>Added support for .NET Core. Fixed several areas that could cause race conditions and deadlocks.</PackageReleaseNotes>
+        <PackageTags>cache;cacher;caching;expiration;multi-threading;thread-safe;thread-safety;threading;performance;generics;dotnet-core</PackageTags>
+        <RepositoryUrl>https://github.com/TwitchBronBron/Plumb.Cacher</RepositoryUrl>
+        <IncludeBuildOutput>true</IncludeBuildOutput>
+        <PackageLicenseUrl>https://raw.githubusercontent.com/TwitchBronBron/Plumb.Cacher/master/LICENSE.txt</PackageLicenseUrl>
+    </PropertyGroup>
 </Project>

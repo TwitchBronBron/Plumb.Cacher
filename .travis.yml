@@ -1,6 +1,8 @@
 language: csharp
-solution: Plumb.Cacher.sln
+mono: none
+dotnet: 2.1.2
 script:
-    - xbuild Plumb.Cacher.sln
-    - mono ./packages/xunit.runner.console.2.2.0/tools/xunit.console.exe ./Tests/bin/Debug/Tests.dll
-    - mono ./Plumb.Cacher/nuget.exe pack Plumb.Cacher/Plumb.Cacher.csproj -Prop Configuration=Release
+  - dotnet test ./Plumb.Cacher.Tests/Plumb.Cacher.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Threshold=75
+  - dotnet pack ./Plumb.Cacher -c Release -o ../out
+after_success: 
+  - npm install -g coveralls --verbose && coveralls < ./coverage/lcov.info
