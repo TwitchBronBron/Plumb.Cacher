@@ -3,4 +3,4 @@ solution: Plumb.Cacher.sln
 script:
     - xbuild Plumb.Cacher.sln
     - mono ./packages/xunit.runner.console.2.2.0/tools/xunit.console.exe ./Tests/bin/Debug/Tests.dll
-    - bash ./BuildNugetPackage.sh
+    - mono ./Plumb.Cacher/NuGet.exe pack Plumb.Cacher/Plumb.Cacher.csproj -Prop Configuration=Release
