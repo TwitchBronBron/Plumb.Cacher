@@ -18,13 +18,10 @@ deploy:
   description: '$(appveyor_build_version)'
   provider: GitHub
   auth_token:
-    secure: $(GITHUB_PERSONAL_ACCESS_TOKEN) # your encrypted token from GitHub
-  artifact: /.\.nupkg/            # upload all NuGet packages to release assets
+    secure: DltCzWLZlWBEDtaQYtoxdSVZH6cS0240H8T1MfhAiWu8yYSg9F92IdrhPqdC+jtQ
+  artifact: /.\.nupkg/
   draft: false
   prerelease: false
   #on:
-  #  branch: master                 # release from master branch only
+  #  branch: master
   #  appveyor_repo_tag: true        # deploy on tag push only
-environment:
-  GITHUB_PERSONAL_ACCESS_TOKEN:
-    secure: DltCzWLZlWBEDtaQYtoxdSVZH6cS0240H8T1MfhAiWu8yYSg9F92IdrhPqdC+jtQ

@@ -1,7 +1,6 @@
 language: csharp
 mono: none
-dotnet: 
-  - 2.1.2
+dotnet: 2.1.2
 script:
   - dotnet test ./Plumb.Cacher.Tests/Plumb.Cacher.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Threshold=80
   - dotnet pack ./Plumb.Cacher -c Release -o ../out
