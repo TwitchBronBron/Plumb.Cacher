@@ -47,9 +47,9 @@ namespace Plumb.Cacher
         }
 
         /// <summary>
-        /// Indicates whether this cache item was forcefully killed. Helpful in resolve functions when deciding whether to throw an exception or not.
+        /// Indicates whether this cache item should be discarded. This is true when a manual .Remove() is called on the cache.
         /// </summary>
-        public bool IsKilled = false;
+        public bool ShouldBeDiscarded = false;
 
         /// <summary>
         /// The thread used when resolving the value in this item

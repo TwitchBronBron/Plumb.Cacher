@@ -38,7 +38,10 @@
             },
             "args": [
                 "test",
-                "Plumb.Cacher.Tests"
+                "Plumb.Cacher.Tests",
+                "/p:CollectCoverage=true",
+                "/p:CoverletOutputFormat=lcov",
+                "/p:CoverletOutput=../coverage/lcov.info"
             ],
             "type": "shell",
             "presentation": {

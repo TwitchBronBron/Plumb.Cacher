@@ -244,6 +244,7 @@ namespace Plumb.Cacher
         /// <summary>
         /// Gets the value with specified the key. If no item with that key exists, 
         /// the factory function is called to construct a new value.
+        /// 
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="key">The unique key used to identify the item.</param>
@@ -312,19 +313,13 @@ namespace Plumb.Cacher
                 }
             }
 
-            //if this cache item got killed, throw an exception
-            if (cacheItem != null && cacheItem.IsKilled)
-            {
-                throw new Exception("Cache item's resolver was forcibly killed before it could resolve");
-            }
-
             //add this item to the eviction keys list
             lock (this.EvictionOrderList)
             {
                 EvictionOrderList.Add(cacheItem.EvictionDate, cacheItem);
             }
 
-            //if the item expired and was NOT created this call, toss it and get a new one
+            //if the item expired and was NOT created this call, toss it and get a new one. Will RARELY happen.
             if (cacheItem.IsExpired && createdThisCall == false)
             {
                 this.Remove(key);
@@ -333,7 +328,25 @@ namespace Plumb.Cacher
             else
             {
                 var task = (Task<T>)cacheItem.Value;
-                return await task;
+                var result = await task;
+
+                //if this cache item should be discarded
+                if (cacheItem != null && cacheItem.ShouldBeDiscarded)
+                {
+                    //use the newest value from cache (if it exists)
+                    Lazy<CacheItem> lazyNewerCacheItem;
+                    this.InternalCache.TryGetValue(key, out lazyNewerCacheItem);
+                    if (lazyNewerCacheItem != null && lazyNewerCacheItem.IsValueCreated)
+                    {
+                        result = await (Task<T>)lazyNewerCacheItem.Value.Value;
+                    }
+                    else
+                    {
+                        //throw an exception because this item was discarded and no newer value exists
+                        throw new Exception($"Could not retrieve item with key '{key}' because it was removed before resolver function finished processing");
+                    }
+                }
+                return result;
             }
         }
 
@@ -342,12 +355,11 @@ namespace Plumb.Cacher
         /// If no key with that name exists, no exception will be thrown. 
         /// </summary>
         /// <param name="key">The unique key used to identify the item</param>
-        /// <param name="killActiveResolves">If true and there is an actively running resolve, the resolve (and its thread) will be terminated. 
-        /// Killing a thread is dangerous, so only pass in true if you are POSITIVE that your calling thread can handle being aborted mid-process. 
-        /// If for some reason the thread cannot be killed, THIS thread will throw an exception.</param>
-        /// <returns>True if an item was removed. 
-        /// False if no item was removed because it didn't exist in cache to begin with.</returns>
-        public bool Remove(string key, bool killActiveResolves = false)
+        /// <param name="invalidateActiveResolve">Invalidate the result of any active resolver for this key. 
+        /// On the resolve function's calling thread, if a NEW value is found, that value will be used instead of the derived value. 
+        /// Otherwise, an exception will be raised because its value was marked as invalid.</param>
+        /// <returns>True if an item was removed. False if no item was removed because it didn't exist in cache to begin with.</returns>
+        public bool Remove(string key, bool invalidateActiveResolve = false)
         {
             this.EvictExpiredItems();
             Lazy<CacheItem> lazy;
@@ -361,15 +373,10 @@ namespace Plumb.Cacher
                     var cacheItem = lazy.Value;
                     this.EvictionOrderList.Remove(cacheItem.EvictionDate, cacheItem);
 
-                    //kill the cache item if it's still resolving
-                    if (killActiveResolves)
+                    //conditionally mark the old cache item for discard
+                    if (invalidateActiveResolve && cacheItem.LazyValue.IsValueCreated == false)
                     {
-                        if (cacheItem.LazyValue.IsValueCreated == false)
-                        {
-                            cacheItem.IsKilled = true;
-                            //try to kill the ResolveThread for this cache item
-                            cacheItem.ResolveThread.AbortSafe(new[] { "Killed by thread " + Thread.CurrentThread.ManagedThreadId });
-                        }
+                        cacheItem.ShouldBeDiscarded = true;
                     }
                 }
                 return true;
@@ -389,13 +396,15 @@ namespace Plumb.Cacher
         public void Reset(string key)
         {
             this.EvictExpiredItems();
+            Lazy<CacheItem> lazyItem;
+            this.InternalCache.TryGetValue(key, out lazyItem);
             //try to reset this cache item's timer. 
-            if (this.InternalCache.ContainsKey(key))
+            if (lazyItem != null)
             {
                 //A race condition could exist that would allow it to be in cache above, but then missing here. So eat any exception where that would happen
                 try
                 {
-                    var cacheItem = this.InternalCache[key].Value;
+                    var cacheItem = lazyItem.Value;
                     lock (this.EvictionOrderList)
                     {
                         EvictionOrderList.Remove(cacheItem.EvictionDate, cacheItem);

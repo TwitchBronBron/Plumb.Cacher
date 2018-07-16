@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +10,25 @@ namespace Plumb.Cacher.Tests
 {
     public class TestSortedDuplicatesList
     {
+
+        [Fact]
+        public void GetEnumeratorWorks()
+        {
+            var list1 = new SortedDuplicatesList<int, int>();
+            list1.Add(0, 0);
+            list1.Add(1, 1);
+            list1.Add(2, 2);
+            IEnumerable ilist = (IEnumerable)list1;
+
+            var idx = 0;
+            foreach (var item in ilist)
+            {
+                var kvp = (KeyValuePair<int, int>)item;
+                Assert.Equal(kvp, list1[idx]);
+                idx++;
+            }
+        }
+
         [Fact]
         public void InsertsItemsInOrder()
         {
