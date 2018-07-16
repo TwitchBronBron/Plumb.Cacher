@@ -13,3 +13,18 @@ before_build:
 
 test_script:
   - cmd: dotnet test ./Plumb.Cacher.Tests/Plumb.Cacher.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Threshold=80
+deploy:
+  release: Plumb.Cacher-v$(appveyor_build_version)
+  description: '$(appveyor_build_version)'
+  provider: GitHub
+  auth_token:
+    secure: GITHUB_PERSONAL_ACCESS_TOKEN # your encrypted token from GitHub
+  artifact: /.\.nupkg/            # upload all NuGet packages to release assets
+  draft: false
+  prerelease: false
+  #on:
+  #  branch: master                 # release from master branch only
+  #  appveyor_repo_tag: true        # deploy on tag push only
+environment:
+  GITHUB_PERSONAL_ACCESS_TOKEN:
+    secure: DltCzWLZlWBEDtaQYtoxdSVZH6cS0240H8T1MfhAiWu8yYSg9F92IdrhPqdC+jtQ

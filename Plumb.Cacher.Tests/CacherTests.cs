@@ -411,7 +411,7 @@ namespace Plumb.Cacher.Tests
         {
             cache.AddOrReplace("name", "bob");
             var name = (string)cache.Get("name", "john");
-            Assert.Equal(name, "bob");
+            Assert.Equal("bob", name);
         }
 
 
