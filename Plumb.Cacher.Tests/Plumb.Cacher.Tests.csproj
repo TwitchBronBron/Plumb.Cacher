@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>netcoreapp2.0;net45</TargetFrameworks>
-        <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netcoreapp2.0</TargetFrameworks>
+        <TargetFrameworks>netcoreapp2.0;net461</TargetFrameworks>
         <IsPackable>false</IsPackable>
     </PropertyGroup>
     <ItemGroup>
@@ -13,5 +12,12 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Plumb.Cacher\Plumb.Cacher.csproj" />
+    </ItemGroup>
+    <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
+        <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
+        <FrameworkPathOverride>$(NuGetPackageFolders)microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\</FrameworkPathOverride>
+    </PropertyGroup>
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
+        <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6.1" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
     </ItemGroup>
 </Project>

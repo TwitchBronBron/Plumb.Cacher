@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
-        <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netstandard2.0</TargetFrameworks> 
+        <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
         <PackageId>Plumb.Cacher</PackageId>
         <Version>2.1.0</Version>
         <Authors>Bronley Plumb</Authors>
@@ -14,4 +13,11 @@
         <IncludeBuildOutput>true</IncludeBuildOutput>
         <PackageLicenseUrl>https://raw.githubusercontent.com/TwitchBronBron/Plumb.Cacher/master/LICENSE.txt</PackageLicenseUrl>
     </PropertyGroup>
+    <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
+        <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
+        <FrameworkPathOverride>$(NuGetPackageFolders)microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\</FrameworkPathOverride>
+    </PropertyGroup>
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
+        <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6.1" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
+    </ItemGroup>
 </Project>
