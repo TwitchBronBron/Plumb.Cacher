@@ -1,0 +1,15 @@
+version: {build}  
+image: 
+- Visual Studio 2017
+init:
+  # Good practise, because Windows line endings are different from Unix/Linux ones
+  - cmd: git config --global core.autocrlf true
+
+before_build:
+# Display .NET Core version
+- cmd: dotnet --version
+# Display minimal restore text
+- cmd: dotnet restore --verbosity m
+
+test_script:
+  - cmd: dotnet test ./Plumb.Cacher.Tests/Plumb.Cacher.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Threshold=80
