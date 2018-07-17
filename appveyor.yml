@@ -21,6 +21,6 @@ deploy:
     description: '$(APPVEYOR_REPO_TAG_NAME)'
     auth_token:
       secure: DltCzWLZlWBEDtaQYtoxdSVZH6cS0240H8T1MfhAiWu8yYSg9F92IdrhPqdC+jtQ
-    artifact: /.*\.nupkg/
+    artifact: '*.nupkg'
     on:
       appveyor_repo_tag: true 
