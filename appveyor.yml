@@ -13,6 +13,7 @@ before_build:
 
 test_script:
   - cmd: dotnet test ./Plumb.Cacher.Tests/Plumb.Cacher.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Threshold=80
+  - cmd: dotnet pack ./Plumb.Cacher -c Release -o ../out
 deploy:
   - provider: GitHub
     name: GitHub_Release
