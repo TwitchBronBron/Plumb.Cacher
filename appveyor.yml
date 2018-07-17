@@ -14,14 +14,12 @@ before_build:
 test_script:
   - cmd: dotnet test ./Plumb.Cacher.Tests/Plumb.Cacher.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Threshold=80
 deploy:
-  release: $(APPVEYOR_REPO_TAG_NAME)
-  description: '$(APPVEYOR_REPO_TAG_NAME)'
-  provider: GitHub
-  auth_token:
-    secure: DltCzWLZlWBEDtaQYtoxdSVZH6cS0240H8T1MfhAiWu8yYSg9F92IdrhPqdC+jtQ
-  artifact: /.\.nupkg/
-  draft: false
-  prerelease: false
-  on:
-    branch: dotnet-core
-    appveyor_repo_tag: true        # deploy on tag push only
+  - provider: GitHub
+    name: GitHub_Release
+    release: $(APPVEYOR_REPO_TAG_NAME)
+    description: '$(APPVEYOR_REPO_TAG_NAME)'
+    auth_token:
+      secure: DltCzWLZlWBEDtaQYtoxdSVZH6cS0240H8T1MfhAiWu8yYSg9F92IdrhPqdC+jtQ
+    artifact: /.\.nupkg/
+    on:
+      appveyor_repo_tag: true 
