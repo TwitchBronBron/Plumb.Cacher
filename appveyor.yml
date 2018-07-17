@@ -11,7 +11,7 @@ before_build:
   # Display minimal restore text
   - cmd: dotnet restore --verbosity m
 build_script:
-  - dotnet pack ./Plumb.Cacher -c Release -o ../out
+  - cmd: dotnet pack ./Plumb.Cacher -c Release -o ../out
 test_script:
   - cmd: dotnet test ./Plumb.Cacher.Tests/Plumb.Cacher.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Threshold=80
 deploy:
