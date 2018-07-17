@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
+        <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
         <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netstandard2.0</TargetFrameworks> 
         <PackageId>Plumb.Cacher</PackageId>
         <Version>2.1.0</Version>

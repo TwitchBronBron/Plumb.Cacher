@@ -272,8 +272,6 @@ namespace Plumb.Cacher
                          return factory();
                      });
                      var constructedCacheItem = new CacheItem(key, lazyCacheItemValue, millisecondsToLive);
-                     //save the thread to the cache item so it can be terminated if need be
-                     constructedCacheItem.ResolveThread = System.Threading.Thread.CurrentThread;
                      return constructedCacheItem;
                  }, LazyThreadSafetyMode.ExecutionAndPublication);
                  return lazyResult;
@@ -306,11 +304,6 @@ namespace Plumb.Cacher
             }
             finally
             {
-                //clear the thread reference so it can be freed up
-                if (cacheItem != null)
-                {
-                    cacheItem.ResolveThread = null;
-                }
             }
 
             //add this item to the eviction keys list

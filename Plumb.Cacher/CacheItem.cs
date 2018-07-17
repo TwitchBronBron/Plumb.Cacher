@@ -52,12 +52,6 @@ namespace Plumb.Cacher
         public bool ShouldBeDiscarded = false;
 
         /// <summary>
-        /// The thread used when resolving the value in this item
-        /// </summary>
-        public Thread ResolveThread;
-
-
-        /// <summary>
         /// The number of milliseconds that this cache item should live before being evicted from the cache
         /// Null means infinite
         /// </summary>
