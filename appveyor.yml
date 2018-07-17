@@ -1,6 +1,5 @@
 version: '{build}'
-image: 
-- Visual Studio 2017
+image: Visual Studio 2017
 init:
   # Good practise, because Windows line endings are different from Unix/Linux ones
   - cmd: git config --global core.autocrlf true
@@ -12,8 +11,13 @@ before_build:
   - cmd: dotnet restore --verbosity m
 build_script:
   - cmd: dotnet pack ./Plumb.Cacher -c Release -o ../out
+
+artifacts:
+  - path: '**\*.nupkg'
+
 test_script:
   - cmd: dotnet test ./Plumb.Cacher.Tests/Plumb.Cacher.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Threshold=80
+
 deploy:
   - provider: GitHub
     name: GitHub_Release
