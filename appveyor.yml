@@ -14,8 +14,8 @@ before_build:
 test_script:
   - cmd: dotnet test ./Plumb.Cacher.Tests/Plumb.Cacher.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Threshold=80
 deploy:
-  release: Plumb.Cacher-v$(appveyor_build_version)
-  description: '$(appveyor_build_version)'
+  release: $(APPVEYOR_REPO_TAG_NAME)
+  description: '$(APPVEYOR_REPO_TAG_NAME)'
   provider: GitHub
   auth_token:
     secure: DltCzWLZlWBEDtaQYtoxdSVZH6cS0240H8T1MfhAiWu8yYSg9F92IdrhPqdC+jtQ
