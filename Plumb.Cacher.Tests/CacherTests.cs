@@ -462,6 +462,42 @@ namespace Plumb.Cacher.Tests
             Assert.False(cache.ContainsKey("name"));
         }
 
+
+        [Fact]
+        public void DoesNotDeadlockWhenCallingAddOrReplace()
+        {
+            var exitWhile = false;
+            var readerTask = Task.Factory.StartNew((Object obj) =>
+            {
+                var result = cache.Resolve("name", () =>
+                {
+                    while (exitWhile == false)
+                    {
+                        Thread.Sleep(100);
+                    }
+                    return "bob";
+                });
+                var k = result;
+            }, null);
+
+            //spin until the cache has the key
+            while (cache.ContainsKey("name") == false)
+            {
+                Thread.Sleep(100);
+            }
+            //remove the item from cache
+            cache.AddOrReplace("name", "bob");
+            //exit the reader's while loop
+            exitWhile = true;
+
+            //wait for the reader task to complete
+            Task.WaitAll(new[] { readerTask });
+
+            //what is in the cache?
+            Assert.Equal("bob", cache["name"]);
+        }
+
+
         [Fact]
         public void ResolveDoesNotSaveItemWhenExceptionIsThrown()
         {
