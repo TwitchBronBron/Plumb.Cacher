@@ -517,6 +517,26 @@ namespace Plumb.Cacher.Tests
         }
 
         [Fact]
+        public void AddOrReplaceAllowsObjectsToBeRetrieved()
+        {
+            var person = new Person();
+            person.Name = "John Doe";
+            person.Age = 30;
+            cache.AddOrReplace("person", person);
+            var cachedPerson = cache.Resolve("person", () =>
+            {
+                return person;
+            });
+            Assert.Equal(person, cachedPerson);
+        }
+
+        class Person
+        {
+            public string Name;
+            public int Age;
+        }
+
+        [Fact]
         public async Task ResolveAsyncWorks()
         {
             var item = await cache.ResolveAsync<bool>("itWorks!", () =>

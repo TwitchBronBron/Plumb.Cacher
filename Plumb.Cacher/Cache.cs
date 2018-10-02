@@ -45,7 +45,7 @@ namespace Plumb.Cacher
         /// </summary>
         /// <param name="key">The unique key used to identify this item</param>
         /// <param name="value">The item to be cached</param>
-        public void AddOrReplace(string key, object value)
+        public virtual void AddOrReplace<T>(string key, T value)
         {
             this.AddOrReplace(key, value, this.DefaultMillisecondsToLive);
         }
@@ -59,7 +59,7 @@ namespace Plumb.Cacher
         ///     The number of milliseconds that this item should remain in the cache. 
         ///     If null, the item will live in cache indefinitely 
         /// </param>
-        public void AddOrReplace(string key, object value, int? millisecondsToLive)
+        public virtual void AddOrReplace<T>(string key, T value, int? millisecondsToLive)
         {
             lock (this.InternalCache)
             {
@@ -130,7 +130,7 @@ namespace Plumb.Cacher
         /// <param name="key">The unique key used to identify the item.</param>
         /// <exception cref="System.Exception">Thrown when no item with the specified key is found.</exception>
         /// <returns></returns>
-        public object Get(string key)
+        public virtual object Get(string key)
         {
             this.EvictExpiredItems();
             return this[key];
@@ -144,7 +144,7 @@ namespace Plumb.Cacher
         /// <param name="key">The unique key used to identify the item.</param>
         /// <exception cref="System.Exception">Thrown when no item with the specified key is found.</exception>
         /// <returns></returns>
-        public T Get<T>(string key)
+        public virtual T Get<T>(string key)
         {
             this.EvictExpiredItems();
             var item = (T)this[key];
@@ -157,7 +157,7 @@ namespace Plumb.Cacher
         /// <param name="key">The unique key used to identify the item.</param>
         /// <param name="defaultValue">A default value to return if the item was not found</param>
         /// <returns></returns>
-        public object Get(string key, object defaultValue)
+        public virtual object Get(string key, object defaultValue)
         {
             return Get<object>(key, defaultValue);
         }
@@ -169,7 +169,7 @@ namespace Plumb.Cacher
         /// <param name="key">The unique key used to identify the item.</param>
         /// <param name="defaultValue">A default value to return if the item was not found</param>
         /// <returns></returns>
-        public T Get<T>(string key, T defaultValue)
+        public virtual T Get<T>(string key, T defaultValue)
         {
             //if we know for sure the item isn't in the cache, return the default value
             if (!this.ContainsKey(key))
@@ -199,7 +199,7 @@ namespace Plumb.Cacher
         /// <param name="key">The unique key used to identify the item</param>
         /// <exception cref="System.Exception">Thrown when no item with the specified key is found</exception>
         /// <returns>The number of milliseconds until the cache item will expire</returns>
-        public double GetMillisecondsRemaining(string key)
+        public virtual double GetMillisecondsRemaining(string key)
         {
             this.EvictExpiredItems();
             try
@@ -225,7 +225,7 @@ namespace Plumb.Cacher
         ///     If null, the item will live in cache indefinitely .
         /// </param>
         /// <returns>The item from cache</returns>
-        public T Resolve<T>(string key, Func<T> factory, int? millisecondsToLive = null)
+        public virtual T Resolve<T>(string key, Func<T> factory, int? millisecondsToLive = null)
         {
             try
             {
@@ -254,28 +254,29 @@ namespace Plumb.Cacher
         ///     If null, the item will live in cache indefinitely .
         /// </param>
         /// <returns>The item from cache</returns>
-        public async Task<T> ResolveAsync<T>(string key, Func<Task<T>> factory, int? millisecondsToLive = null)
+        public virtual async Task<T> ResolveAsync<T>(string key, Func<Task<T>> factory, int? millisecondsToLive = null)
         {
             this.EvictExpiredItems();
 
             var createdThisCall = false;
             millisecondsToLive = millisecondsToLive != null ? millisecondsToLive : this.DefaultMillisecondsToLive;
             var lazyCacheItem = this.InternalCache.GetOrAdd(key, (string k) =>
-             {
-                 //only allow a single thread to run this specific resolver function at a time. 
-                 var lazyResult = new Lazy<CacheItem>(() =>
-                 {
-                     createdThisCall = true;
+            {
+                //only allow a single thread to run this specific resolver function at a time. 
+                var lazyResult = new Lazy<CacheItem>(() =>
+                {
+                    createdThisCall = true;
 
-                     var lazyCacheItemValue = new Lazy<object>(() =>
-                     {
-                         return factory();
-                     });
-                     var constructedCacheItem = new CacheItem(key, lazyCacheItemValue, millisecondsToLive);
-                     return constructedCacheItem;
-                 }, LazyThreadSafetyMode.ExecutionAndPublication);
-                 return lazyResult;
-             });
+                    var lazyCacheItemValue = new Lazy<object>(() =>
+                    {
+                        var factoryValue = factory();
+                        return factoryValue;
+                    });
+                    var constructedCacheItem = new CacheItem(key, lazyCacheItemValue, millisecondsToLive);
+                    return constructedCacheItem;
+                }, LazyThreadSafetyMode.ExecutionAndPublication);
+                return lazyResult;
+            });
 
             CacheItem cacheItem = null;
             try
@@ -352,7 +353,7 @@ namespace Plumb.Cacher
         /// On the resolve function's calling thread, if a NEW value is found, that value will be used instead of the derived value. 
         /// Otherwise, an exception will be raised because its value was marked as invalid.</param>
         /// <returns>True if an item was removed. False if no item was removed because it didn't exist in cache to begin with.</returns>
-        public bool Remove(string key, bool invalidateActiveResolve = false)
+        public virtual bool Remove(string key, bool invalidateActiveResolve = false)
         {
             this.EvictExpiredItems();
             Lazy<CacheItem> lazy;
@@ -386,7 +387,7 @@ namespace Plumb.Cacher
         /// </summary>
         /// <param name="key">The unique key used to identify the item</param>
         /// <exception cref="System.Exception">Thrown when no item with the specified key is found</exception>
-        public void Reset(string key)
+        public virtual void Reset(string key)
         {
             this.EvictExpiredItems();
             Lazy<CacheItem> lazyItem;
@@ -419,7 +420,7 @@ namespace Plumb.Cacher
         /// <summary>
         /// Remove all items from the cache. This will not terminate any currently running resolves, but will allow all future calls to fetch fresh data.
         /// </summary>
-        public void Clear()
+        public virtual void Clear()
         {
             this.InternalCache.Clear();
             lock (this.EvictionOrderList)
@@ -435,7 +436,7 @@ namespace Plumb.Cacher
         /// <param name="index"></param>
         /// <exception cref="System.Exception">Thrown when no item with the specified key is found</exception>
         /// <returns></returns>
-        public object this[string index]
+        public virtual object this[string index]
         {
             get
             {
