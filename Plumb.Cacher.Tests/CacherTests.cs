@@ -165,15 +165,15 @@ namespace Plumb.Cacher.Tests
             var name = cache.Resolve("name", () =>
             {
                 return "Bob";
-            }, 20);
+            }, 50);
             Assert.Equal("Bob", name);
 
             //timeout for less than a second. 
-            Thread.Sleep(10);
+            Thread.Sleep(5);
 
             //reset the cache item, giving it exactly one second to live
             cache.Reset("name");
-            Thread.Sleep(15);
+            Thread.Sleep(5);
 
             name = cache.Resolve("name", () =>
             {
@@ -182,7 +182,7 @@ namespace Plumb.Cacher.Tests
             Assert.Equal("Bob", name);
 
             //sleep until after the item should expire. Verify that the item expired
-            Thread.Sleep(10);
+            Thread.Sleep(55);
             name = cache.Resolve("name", () =>
             {
                 return "Not Bob";
