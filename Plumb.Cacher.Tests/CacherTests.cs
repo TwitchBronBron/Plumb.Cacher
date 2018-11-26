@@ -583,6 +583,107 @@ namespace Plumb.Cacher.Tests
             }
         }
 
+        [Fact]
+        public void TestResolveBulk_Works()
+        {
+            cache.AddOrReplace("item-1", 1);
+            cache.AddOrReplace("item-3", 3);
+
+            var wasCalled = false;
+
+            //factory only sends missing keys
+            var items = cache.ResolveBulk("item-", new[] { 1, 2, 3 }, (keys) =>
+            {
+                wasCalled = true;
+                Assert.Equal(keys, new[] { 2 });
+                return new Dictionary<int, int> { { 2, 2 } };
+            });
+
+            //factory was called
+            Assert.True(wasCalled);
+
+            //returns full list of requested items
+            Assert.Equal(items.OrderBy(x => x), new[] { 1, 2, 3 });
+        }
+
+        [Fact]
+        public void TestResolveBulk_SkipsFactoryWhenUnnecessary()
+        {
+            cache.AddOrReplace("item-1", 1);
+
+            var wasCalled = false;
+
+            //factory only sends missing keys
+            var items = cache.ResolveBulk("item-", new[] { 1 }, (keys) =>
+            {
+                wasCalled = true;
+                return new Dictionary<int, int> { { 1, 1 } };
+            });
+
+            //factory was called
+            Assert.False(wasCalled);
+        }
+
+        //exclude this test for now because it's unlikely that these factories will be regularly
+        //calling the same functions all the time. 
+        //TODO - fix library to support this test.S
+        // [Fact]
+        // public void TestResolveBulk_DoesNotRunMultipleFactoriesForSameKeyAtSameTime()
+        // {
+        //     var keyCounts = new Dictionary<int, int> {
+        //         { 1, 0 },
+        //         { 2, 0 },
+        //         { 3, 0 }
+        //     };
+
+        //     //run these resolvers in separate threads
+        //     var thread1 = new Thread(async () =>
+        //     {
+        //         await cache.ResolveBulkAsync("item-", new[] { 1, 2 }, async (keys) =>
+        //         {
+        //             lock (keyCounts)
+        //             {
+        //                 foreach (var key in keys)
+        //                 {
+        //                     keyCounts[key]++;
+        //                 }
+        //             }
+        //             Assert.Equal(keys.OrderBy(x => x), new[] { 1, 2 });
+        //             //simulate a slow network connection to give below resolver a chance to run
+        //             await Task.Delay(200);
+        //             return await Task.FromResult(new Dictionary<int, int> { { 1, 1 }, { 2, 2 } });
+        //         });
+        //     });
+
+        //     var thread2 = new Thread(async () =>
+        //     {
+        //         await cache.ResolveBulkAsync("item-", new[] { 1, 2, 3 }, async (keys) =>
+        //         {
+        //             lock (keyCounts)
+        //             {
+        //                 foreach (var key in keys)
+        //                 {
+        //                     keyCounts[key]++;
+        //                 }
+        //             }
+        //             Assert.Equal(keys.OrderBy(x => x), new[] { 3 });
+        //             await Task.Delay(200);
+        //             return await Task.FromResult(new Dictionary<int, int> { { 3, 3 } });
+        //         });
+        //     });
+        //     thread1.Start();
+        //     thread2.Start();
+
+        //     //let both threads come back together
+        //     thread1.Join();
+        //     thread2.Join();
+            
+        //     //each key should have only been used once
+        //     Assert.Equal(1, keyCounts[1]);
+        //     Assert.Equal(1, keyCounts[2]);
+        //     Assert.Equal(1, keyCounts[3]);
+        // }
+
         class TestCache : Cache
         {
             public ConcurrentDictionary<string, Lazy<CacheItem>> theCache

@@ -212,6 +212,86 @@ namespace Plumb.Cacher
             }
         }
 
+        /// <summary>
+        /// Get all items Use any existing items from cache, and call a resolver function to fetch the missing items.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="cacheKeyPrefix">The prefix used before the item key for each item in the list</param>
+        /// <param name="keys">The keys for all items to be fetched.</param>
+        /// <param name="factory">The factory function to be called to generate the items. Only missing keys will be passed to this function.
+        /// <param name="millisecondsToLive">The number of milliseconds that these items should remain in the cache. 
+        ///     If null, the items will live in cache indefinitely.
+        /// </param>
+        /// <returns>The items from cache</returns>
+        public virtual IEnumerable<TValue> ResolveBulk<TKey, TValue>(string cacheKeyPrefix, IEnumerable<TKey> keys, Func<IEnumerable<TKey>, Dictionary<TKey, TValue>> factory, int? millisecondsToLive = null)
+        {
+            return this.ResolveBulkAsync<TKey, TValue>(cacheKeyPrefix, keys, async (missingKeys) =>
+            {
+                return await Task.FromResult(
+                    factory(missingKeys)
+                );
+            }, millisecondsToLive).Result;
+        }
+
+
+        /// <summary>
+        /// Get all items Use any existing items from cache, and call a resolver function to fetch the missing items.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="cacheKeyPrefix">The prefix used before the item key for each item in the list</param>
+        /// <param name="keys">The keys for all items to be fetched.</param>
+        /// <param name="factory">The factory function to be called to generate the items. Only missing keys will be passed to this function.
+        /// <param name="millisecondsToLive">The number of milliseconds that these items should remain in the cache. 
+        ///     If null, the items will live in cache indefinitely.
+        /// </param>
+        /// <returns>The items from cache</returns>
+        public virtual async Task<IEnumerable<TValue>> ResolveBulkAsync<TKey, TValue>(string cacheKeyPrefix, IEnumerable<TKey> keys, Func<IEnumerable<TKey>, Task<Dictionary<TKey, TValue>>> factory, int? millisecondsToLive = null)
+        {
+            var missingKeys = new List<TKey>();
+            var results = new List<TValue>();
+            foreach (var key in keys)
+            {
+                var cacheKey = $"{cacheKeyPrefix}{key}";
+                var item = this.Get(cacheKey, null);
+                //find out if the item was null intentionally. This exposes a very small window where the item was fetched and then 
+                //immediately evicted, but the window is small and worst case, the item gets re-fetched in the factory, so
+                //this is an acceptable condition.
+                var itemWasStoredAsNull = this.ContainsKey(cacheKey);
+                if (item != null || (item == null && itemWasStoredAsNull))
+                {
+                    results.Add((TValue)item);
+                }
+                else
+                {
+                    missingKeys.Add(key);
+                }
+            }
+
+            //if missing some items, get them from the factory
+            if (missingKeys.Count > 0)
+            {
+                var factoryResultTask = factory(missingKeys);
+                var resolveTasks = new List<Task<TValue>>();
+                foreach (var key in missingKeys)
+                {
+                    var resolveTask = this.ResolveAsync($"{cacheKeyPrefix}{key}", async () =>
+                    {
+                        //wait for the factory to finish
+                        var items = await factoryResultTask;
+                        var item = items[key];
+                        results.Add(item);
+                        return item;
+                    }, millisecondsToLive);
+                    resolveTasks.Add(resolveTask);
+                }
+
+                //wait for all resolvers to complete
+                await Task.WhenAll(resolveTasks);
+            }
+
+            //return the full list of results
+            return results;
+        }
 
         /// <summary>
         /// Gets the value with specified the key. If no item with that key exists, 
