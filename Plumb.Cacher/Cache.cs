@@ -311,7 +311,20 @@ namespace Plumb.Cacher
             {
                 return ResolveAsync(key, () =>
                 {
-                    return Task.FromResult(factory());
+                    var result = factory();
+                    //if the result is a task, wait for its result (which forces out any exceptions that may have occurred)
+                    //This is only necessary when a user incorrectly uses an async function inside of this resulve function. 
+                    //Users SHOULD use ResolveAsync to avoid this reflection cost
+                    if (result != null)
+                    {
+                        var resultType = result.GetType();
+                        if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Task<>))
+                        {
+                            //get the result from the task (which causes a spin wait)
+                            resultType.GetProperty("Result").GetValue(result);
+                        }
+                    }
+                    return Task.FromResult(result);
                 }, millisecondsToLive).Result;
             }
             //if this is an aggregate exception, the async stack is aggregating the regular exceptions. Throw the first one found
@@ -366,6 +379,9 @@ namespace Plumb.Cacher
 
                 //force the cache item to run its lazy value factory
                 var value = cacheItem.Value;
+
+                //wait for the task to complete (which also propagates any exception)
+                await (Task<T>)value;
 
             }
             catch (System.InvalidOperationException e)
