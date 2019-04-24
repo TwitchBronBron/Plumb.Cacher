@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/TwitchBronBron/Plumb.Cacher.svg?branch=master)](https://travis-ci.org/TwitchBronBron/Plumb.Cacher)
 [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/knn6laqdeusq053g?svg=true)](https://ci.appveyor.com/project/TwitchBronBron/plumb-cacher)
 [![Coverage Status](https://coveralls.io/repos/github/TwitchBronBron/Plumb.Cacher/badge.svg?branch=master)](https://coveralls.io/github/TwitchBronBron/Plumb.Cacher?branch=master)
+[![Nuget Version](https://img.shields.io/nuget/v/Plumb.Cacher.svg)](https://www.nuget.org/packages/Plumb.Cacher/)
 
 A .NET thread-safe in-memory cache that provides expiration for cache items. 
 
