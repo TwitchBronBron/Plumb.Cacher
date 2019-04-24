@@ -8,7 +8,7 @@
         <Description>An in-memory, thread-safe, self-expiring cache.</Description>
         <Copyright>Copyright 2016-2018 Bronley plumb</Copyright>
         <PackageProjectUrl>https://github.com/TwitchBronBron/Plumb.Cacher</PackageProjectUrl>
-        <PackageReleaseNotes>Added support for .NET Core. Fixed several areas that could cause race conditions and deadlocks.</PackageReleaseNotes>
+        <PackageReleaseNotes>Fixed issue in async resolver that was caching exceptions. Exceptions thrown in async resolvers now cause that cache item to be immediately discarded.</PackageReleaseNotes>
         <PackageTags>cache;cacher;caching;expiration;multi-threading;thread-safe;thread-safety;threading;performance;generics;dotnet-core</PackageTags>
         <RepositoryUrl>https://github.com/TwitchBronBron/Plumb.Cacher</RepositoryUrl>
         <IncludeBuildOutput>true</IncludeBuildOutput>
