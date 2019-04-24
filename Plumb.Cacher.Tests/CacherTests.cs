@@ -517,6 +517,45 @@ namespace Plumb.Cacher.Tests
         }
 
         [Fact]
+        public async Task ResolveDoesNotSaveItemWhenTaskWithExceptionIsThrown()
+        {
+            Assert.False(cache.ContainsKey("item"));
+            try
+            {
+                await cache.Resolve("item", async () =>
+                {
+                    throw new Exception("AAA");
+                    return await Task.FromResult(true);
+                });
+                Assert.False(true, "should not have run this line");
+            }
+            catch (Exception)
+            {
+                Assert.False(cache.ContainsKey("item"), "item should not be included in the cache");
+            }
+        }
+
+
+        [Fact]
+        public async Task ResolveAsyncDoesNotSaveItemWhenExceptionIsThrown()
+        {
+            Assert.False(cache.ContainsKey("item"));
+            try
+            {
+                await cache.ResolveAsync("item", async () =>
+                {
+                    throw new Exception("AAA");
+                    return await Task.FromResult(true);
+                });
+                Assert.False(true, "should not have run this line");
+            }
+            catch (Exception)
+            {
+                Assert.False(cache.ContainsKey("item"), "item should not be included in the cache");
+            }
+        }
+
+        [Fact]
         public void AddOrReplaceAllowsObjectsToBeRetrieved()
         {
             var person = new Person();
@@ -677,7 +716,7 @@ namespace Plumb.Cacher.Tests
         //     //let both threads come back together
         //     thread1.Join();
         //     thread2.Join();
-            
+
         //     //each key should have only been used once
         //     Assert.Equal(1, keyCounts[1]);
         //     Assert.Equal(1, keyCounts[2]);
